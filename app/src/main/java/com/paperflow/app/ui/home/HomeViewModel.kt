@@ -286,10 +286,20 @@ class HomeViewModel(
                     for (i in 0 until count) {
                         val page = pdfRenderer.openPage(i)
                         
-                        val width = page.width * 2
-                        val height = page.height * 2
-                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        val densityDpi = 300
+                        var width = (page.width * densityDpi / 72.0).toInt()
+                        var height = (page.height * densityDpi / 72.0).toInt()
+                        val maxDim = maxOf(width, height)
+                        if (maxDim > 3500) {
+                            val scale = 3500.0 / maxDim
+                            width = (width * scale).toInt()
+                            height = (height * scale).toInt()
+                        }
+                        val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, width, height, Bitmap.Config.ARGB_8888)
+                        if (bitmap == null) {
+                            page.close()
+                            continue
+                        }
                         page.close()
 
                         val imageFile = photoRepository.createPhotoImageFile()

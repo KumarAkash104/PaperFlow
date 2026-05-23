@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
@@ -242,34 +243,53 @@ fun CameraScreen(
                         .padding(bottom = 12.dp),
                 ) {
                     items(uiState.capturedPages) { page ->
-                        AsyncImage(
-                            model = page.uri,
-                            contentDescription = "Scanned page",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    scope.launch {
-                                        if (viewModel.cameraMode == "photo") {
-                                            val photoId = viewModel.saveAndGetPhotoId(page)
-                                            if (photoId != null) {
-                                                onEditPhoto(photoId)
-                                            }
-                                        } else {
-                                            val pageId = viewModel.saveAndGetPageId(page)
-                                            if (pageId != null) {
-                                                onEditPage(pageId)
+                        Box {
+                            AsyncImage(
+                                model = page.uri,
+                                contentDescription = "Scanned page",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        scope.launch {
+                                            if (viewModel.cameraMode == "photo") {
+                                                val photoId = viewModel.saveAndGetPhotoId(page)
+                                                if (photoId != null) {
+                                                    onEditPhoto(photoId)
+                                                }
+                                            } else {
+                                                val pageId = viewModel.saveAndGetPageId(page)
+                                                if (pageId != null) {
+                                                    onEditPage(pageId)
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                .border(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                    RoundedCornerShape(8.dp),
-                                ),
-                        )
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        RoundedCornerShape(8.dp),
+                                    ),
+                            )
+                            
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 6.dp, y = (-6).dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Red)
+                                    .clickable { viewModel.removePage(page) }
+                                    .padding(2.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close, 
+                                    contentDescription = "Delete", 
+                                    tint = Color.White, 
+                                    modifier = Modifier.size(10.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -280,11 +300,10 @@ fun CameraScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
             ) {
-                // Undo last / Gallery
+                // Import from Gallery
                 Row(
                     modifier = Modifier.align(Alignment.CenterStart),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -313,32 +332,6 @@ fun CameraScreen(
                                 fontSize = 10.sp,
                                 maxLines = 1
                             )
-                        }
-                    }
-                    
-                    if (uiState.capturedPages.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { viewModel.removeLastPage() }
-                                .padding(8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Default.Undo,
-                                    contentDescription = "Undo last",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    text = "Undo",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    maxLines = 1
-                                )
-                            }
                         }
                     }
                 }

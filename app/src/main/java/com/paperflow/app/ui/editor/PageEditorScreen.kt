@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -158,6 +159,7 @@ fun PageEditorScreen(
 
     var menuExpanded by remember { mutableStateOf(false) }
     var imageScale by remember { mutableStateOf(1f) }
+    var isAdjustEditorVisible by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val compareInteractionSource = remember { MutableInteractionSource() }
@@ -228,7 +230,12 @@ fun PageEditorScreen(
             )
         },
         bottomBar = {
-            Column {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isAdjustEditorVisible,
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it })
+            ) {
+                Column {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -357,6 +364,7 @@ fun PageEditorScreen(
                     }
                 }
             }
+            }
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
@@ -460,6 +468,52 @@ fun PageEditorScreen(
                                             job.cancel()
                                             isImagePressed = false
                                         }
+                                    }
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onDoubleTap = { tapOffset ->
+                                                if (imageScale > 1.1f) {
+                                                    scope.launch {
+                                                        val startScale = imageScale
+                                                        val startOffsetX = offset.x
+                                                        val startOffsetY = offset.y
+                                                        androidx.compose.animation.core.animate(0f, 1f, animationSpec = androidx.compose.animation.core.tween(300)) { value, _ ->
+                                                            imageScale = startScale + (1f - startScale) * value
+                                                            offset = androidx.compose.ui.geometry.Offset(
+                                                                startOffsetX + (0f - startOffsetX) * value,
+                                                                startOffsetY + (0f - startOffsetY) * value
+                                                            )
+                                                        }
+                                                    }
+                                                } else {
+                                                    val targetScale = 2.5f
+                                                    val centerX = size.width / 2f
+                                                    val centerY = size.height / 2f
+                                                    var targetOffsetX = (centerX - tapOffset.x) * (targetScale - 1f)
+                                                    var targetOffsetY = (centerY - tapOffset.y) * (targetScale - 1f)
+                                                    val maxX = (size.width * (targetScale - 1f)) / 2f
+                                                    val maxY = (size.height * (targetScale - 1f)) / 2f
+                                                    targetOffsetX = targetOffsetX.coerceIn(-maxX, maxX)
+                                                    targetOffsetY = targetOffsetY.coerceIn(-maxY, maxY)
+                                                    
+                                                    scope.launch {
+                                                        val startScale = imageScale
+                                                        val startOffsetX = offset.x
+                                                        val startOffsetY = offset.y
+                                                        androidx.compose.animation.core.animate(0f, 1f, animationSpec = androidx.compose.animation.core.tween(300)) { value, _ ->
+                                                            imageScale = startScale + (targetScale - startScale) * value
+                                                            offset = androidx.compose.ui.geometry.Offset(
+                                                                startOffsetX + (targetOffsetX - startOffsetX) * value,
+                                                                startOffsetY + (targetOffsetY - startOffsetY) * value
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onTap = {
+                                                isAdjustEditorVisible = !isAdjustEditorVisible
+                                            }
+                                        )
                                     },
                             )
                         }

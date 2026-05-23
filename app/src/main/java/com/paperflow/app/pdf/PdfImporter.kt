@@ -44,17 +44,17 @@ object PdfImporter {
                 var width = rawWidth
                 var height = rawHeight
                 val maxDim = maxOf(width, height)
-                if (maxDim > 2800) {
-                    val scale = 2800.0 / maxDim
+                if (maxDim > 3500) {
+                    val scale = 3500.0 / maxDim
                     width = (width * scale).toInt()
                     height = (height * scale).toInt()
                 }
 
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                // Fill with white background (PDFs are often transparent)
-                bitmap.eraseColor(android.graphics.Color.WHITE)
-                
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, width, height, Bitmap.Config.ARGB_8888)
+                if (bitmap == null) {
+                    page.close()
+                    continue
+                }
                 page.close()
                 // Save bitmap to file
                 val imageFile = repository.createScanImageFile()

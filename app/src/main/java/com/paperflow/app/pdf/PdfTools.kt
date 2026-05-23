@@ -115,16 +115,24 @@ object PdfTools {
             for (i in 0 until renderer.pageCount) {
                 val page = renderer.openPage(i)
 
-                // Render at original resolution (scale 1x) — keeps text sharp
-                val width = page.width
-                val height = page.height
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                bitmap.eraseColor(android.graphics.Color.WHITE)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                page.close()
-
+                // Render at high resolution to keep text sharp
+                val densityDpi = 300
+                var bmpWidth = (page.width * densityDpi / 72.0).toInt()
+                var bmpHeight = (page.height * densityDpi / 72.0).toInt()
+                val maxDim = maxOf(bmpWidth, bmpHeight)
+                if (maxDim > 3500) {
+                    val scale = 3500.0 / maxDim
+                    bmpWidth = (bmpWidth * scale).toInt()
+                    bmpHeight = (bmpHeight * scale).toInt()
+                }
+                val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, bmpWidth, bmpHeight, Bitmap.Config.ARGB_8888)
+                if (bitmap == null) {
+                    page.close()
+                    continue
+                }
                 // Create a new PDF page with matching dimensions
-                val mediaBox = PDRectangle(width.toFloat(), height.toFloat())
+                val mediaBox = PDRectangle(page.width.toFloat(), page.height.toFloat())
+                page.close()
                 val pdfPage = PDPage(mediaBox)
                 doc.addPage(pdfPage)
 
@@ -169,10 +177,20 @@ object PdfTools {
             
             for (i in 0 until renderer.pageCount) {
                 val page = renderer.openPage(i)
-                val bitmap = Bitmap.createBitmap(page.width * 2, page.height * 2, Bitmap.Config.ARGB_8888)
-                // Fill with white background
-                bitmap.eraseColor(android.graphics.Color.WHITE)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                val densityDpi = 300
+                var bmpWidth = (page.width * densityDpi / 72.0).toInt()
+                var bmpHeight = (page.height * densityDpi / 72.0).toInt()
+                val maxDim = maxOf(bmpWidth, bmpHeight)
+                if (maxDim > 3500) {
+                    val scale = 3500.0 / maxDim
+                    bmpWidth = (bmpWidth * scale).toInt()
+                    bmpHeight = (bmpHeight * scale).toInt()
+                }
+                val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, bmpWidth, bmpHeight, Bitmap.Config.ARGB_8888)
+                if (bitmap == null) {
+                    page.close()
+                    continue
+                }
                 
                 val outFile = File(outputDir, "page_${i + 1}.jpg")
                 outFile.outputStream().use { out ->

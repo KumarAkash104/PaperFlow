@@ -179,60 +179,16 @@ fun PhotoEditorScreen(
                     )
                 }
 
-                // Action buttons
+                // Revert to original
                 IconButton(
-                    onClick = { viewModel.undo() },
-                    enabled = canUndo && !state.isSaving && !state.isLoading,
+                    onClick = { viewModel.revertToOriginal() },
                     modifier = Modifier
                         .size(36.dp)
-                        .background(
-                            if (canUndo) Color.White.copy(alpha = 0.06f) else Color.Transparent,
-                            CircleShape
-                        )
+                        .background(Color.White.copy(alpha = 0.06f), CircleShape)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Undo, "Undo", tint = if (canUndo) TextPrimary else TextMuted, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Restore, "Revert to original", tint = TextPrimary, modifier = Modifier.size(18.dp))
                 }
-                Spacer(Modifier.width(4.dp))
-                IconButton(
-                    onClick = { viewModel.redo() },
-                    enabled = canRedo && !state.isSaving && !state.isLoading,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(
-                            if (canRedo) Color.White.copy(alpha = 0.06f) else Color.Transparent,
-                            CircleShape
-                        )
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Redo, "Redo", tint = if (canRedo) TextPrimary else TextMuted, modifier = Modifier.size(18.dp))
-                }
-                Spacer(Modifier.width(4.dp))
-                
-                var menuExpanded by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(
-                        onClick = { menuExpanded = true },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Color.White.copy(alpha = 0.06f), CircleShape)
-                    ) {
-                        Icon(Icons.Default.MoreVert, "More options", tint = TextPrimary, modifier = Modifier.size(18.dp))
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                        containerColor = EditorPanel
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Revert to original", color = TextPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Restore, null, tint = TextPrimary) },
-                            onClick = {
-                                menuExpanded = false
-                                viewModel.revertToOriginal()
-                            }
-                        )
-                    }
-                }
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(8.dp))
 
                 // Save button (accent)
                 Box(
@@ -461,6 +417,33 @@ fun PhotoEditorScreen(
                             ) {
                                 CircularProgressIndicator(color = AccentTeal, modifier = Modifier.size(32.dp), strokeWidth = 2.dp)
                             }
+                        }
+                    }
+
+                    // ── FLOATING UNDO/REDO CAPSULE ──
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { viewModel.undo() },
+                            enabled = canUndo && !state.isSaving && !state.isLoading,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Undo, "Undo", tint = if (canUndo) Color.White else Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
+                        }
+                        Box(Modifier.width(1.dp).height(16.dp).background(Color.White.copy(alpha = 0.2f)))
+                        IconButton(
+                            onClick = { viewModel.redo() },
+                            enabled = canRedo && !state.isSaving && !state.isLoading,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Redo, "Redo", tint = if (canRedo) Color.White else Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
                         }
                     }
                 }

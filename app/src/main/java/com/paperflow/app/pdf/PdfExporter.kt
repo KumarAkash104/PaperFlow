@@ -46,9 +46,14 @@ object PdfExporter {
                 pageSize.widthPt to pageSize.heightPt
             }
 
-            val pageInfo = PdfDocument.PageInfo.Builder(pageW, pageH, index + 1).create()
+            val densityScale = 300f / 72f
+            val pdfW = (pageW * densityScale).toInt()
+            val pdfH = (pageH * densityScale).toInt()
+
+            val pageInfo = PdfDocument.PageInfo.Builder(pdfW, pdfH, index + 1).create()
             val page = document.startPage(pageInfo)
             val canvas = page.canvas
+            canvas.scale(densityScale, densityScale)
 
             // Fit image within page with margins
             val margin = if (pageSize == PageSize.AUTO) 0 else 20

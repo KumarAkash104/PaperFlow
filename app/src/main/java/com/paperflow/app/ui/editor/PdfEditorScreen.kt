@@ -64,6 +64,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -99,6 +101,7 @@ fun PdfEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // Zoom and pan state
     var scale by remember { mutableFloatStateOf(1f) }
@@ -238,7 +241,7 @@ fun PdfEditorScreen(
                             translationY = offsetY
                         }
                         // Pinch-to-zoom + single-finger pan when zoomed
-                        .pointerInput(scale) {
+                        .pointerInput(Unit) {
                             awaitEachGesture {
                                 awaitFirstDown(requireUnconsumed = false)
                                 do {
@@ -280,20 +283,37 @@ fun PdfEditorScreen(
                             detectTapGestures(
                                 onDoubleTap = { tapOffset ->
                                     if (scale > 1.1f) {
-                                        scale = 1f
-                                        offsetX = 0f
-                                        offsetY = 0f
+                                        scope.launch {
+                                            val startScale = scale
+                                            val startOffsetX = offsetX
+                                            val startOffsetY = offsetY
+                                            androidx.compose.animation.core.animate(0f, 1f, animationSpec = androidx.compose.animation.core.tween(300)) { value, _ ->
+                                                scale = startScale + (1f - startScale) * value
+                                                offsetX = startOffsetX + (0f - startOffsetX) * value
+                                                offsetY = startOffsetY + (0f - startOffsetY) * value
+                                            }
+                                        }
                                     } else {
                                         val targetScale = 2.5f
                                         val centerX = size.width / 2f
                                         val centerY = size.height / 2f
-                                        offsetX = (centerX - tapOffset.x) * (targetScale - 1f)
-                                        offsetY = (centerY - tapOffset.y) * (targetScale - 1f)
+                                        var targetOffsetX = (centerX - tapOffset.x) * (targetScale - 1f)
+                                        var targetOffsetY = (centerY - tapOffset.y) * (targetScale - 1f)
                                         val maxX = (size.width * (targetScale - 1f)) / 2f
                                         val maxY = (size.height * (targetScale - 1f)) / 2f
-                                        offsetX = offsetX.coerceIn(-maxX, maxX)
-                                        offsetY = offsetY.coerceIn(-maxY, maxY)
-                                        scale = targetScale
+                                        targetOffsetX = targetOffsetX.coerceIn(-maxX, maxX)
+                                        targetOffsetY = targetOffsetY.coerceIn(-maxY, maxY)
+                                        
+                                        scope.launch {
+                                            val startScale = scale
+                                            val startOffsetX = offsetX
+                                            val startOffsetY = offsetY
+                                            androidx.compose.animation.core.animate(0f, 1f, animationSpec = androidx.compose.animation.core.tween(300)) { value, _ ->
+                                                scale = startScale + (targetScale - startScale) * value
+                                                offsetX = startOffsetX + (targetOffsetX - startOffsetX) * value
+                                                offsetY = startOffsetY + (targetOffsetY - startOffsetY) * value
+                                            }
+                                        }
                                     }
                                 }
                             )

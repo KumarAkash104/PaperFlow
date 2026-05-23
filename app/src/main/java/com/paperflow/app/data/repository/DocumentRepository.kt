@@ -1,6 +1,7 @@
 package com.paperflow.app.data.repository
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.paperflow.app.data.local.AppDatabase
 import com.paperflow.app.data.model.DocumentEntity
 import com.paperflow.app.data.model.PageEntity
@@ -189,11 +190,13 @@ class DocumentRepository(context: Context) {
     }
 
     suspend fun reorderPages(documentId: String, pageIds: List<String>) {
-        pageIds.forEachIndexed { index, pageId ->
-            val page = pageDao.getPageById(pageId) ?: return@forEachIndexed
-            pageDao.updatePage(page.copy(pageIndex = index))
+        db.withTransaction {
+            pageIds.forEachIndexed { index, pageId ->
+                val page = pageDao.getPageById(pageId) ?: return@forEachIndexed
+                pageDao.updatePage(page.copy(pageIndex = index))
+            }
+            refreshDocumentMeta(documentId)
         }
-        refreshDocumentMeta(documentId)
     }
 
     private suspend fun refreshDocumentMeta(documentId: String) {

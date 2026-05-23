@@ -125,12 +125,11 @@ class CameraViewModel(
         )
     }
 
-    fun removeLastPage() {
+    fun removePage(page: CapturedPage) {
         val pages = _uiState.value.capturedPages
-        if (pages.isEmpty()) return
-        val removed = pages.last()
-        java.io.File(removed.filePath).delete()
-        val updated = pages.dropLast(1)
+        if (!pages.contains(page)) return
+        java.io.File(page.filePath).delete()
+        val updated = pages.filter { it != page }
         _uiState.value = _uiState.value.copy(
             capturedPages = updated,
             statusText = if (updated.isEmpty()) {

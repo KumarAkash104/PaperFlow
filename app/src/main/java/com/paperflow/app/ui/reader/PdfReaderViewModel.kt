@@ -126,7 +126,7 @@ class PdfReaderViewModel(
                     isLoading = false,
                     pageCount = count,
                 )
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to load PDF"
@@ -190,14 +190,22 @@ class PdfReaderViewModel(
 
             val page = renderer.openPage(pageIndex)
 
-            // Render at reasonable resolution to prevent OOM
-            val targetWidth = 1200
-            val scale = targetWidth.toFloat() / page.width.toFloat()
-            val targetHeight = (page.height * scale).toInt()
+            // Render at high resolution (e.g., 300 dpi) for crystal clear zoom
+            val densityDpi = 300
+            var targetWidth = (page.width * densityDpi / 72.0).toInt()
+            var targetHeight = (page.height * densityDpi / 72.0).toInt()
+            val maxDim = maxOf(targetWidth, targetHeight)
+            if (maxDim > 3500) {
+                val scale = 3500.0 / maxDim
+                targetWidth = (targetWidth * scale).toInt()
+                targetHeight = (targetHeight * scale).toInt()
+            }
 
-            val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(android.graphics.Color.WHITE)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+            if (bitmap == null) {
+                page.close()
+                return null
+            }
 
             val pageFile = File(cacheDir, "reader_p${pageIndex}.jpg")
             pageFile.outputStream().use { out ->

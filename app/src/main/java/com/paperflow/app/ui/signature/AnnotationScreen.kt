@@ -5,7 +5,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -163,6 +167,10 @@ fun AnnotationScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
+            var scale by remember { mutableFloatStateOf(1f) }
+            var offsetX by remember { mutableFloatStateOf(0f) }
+            var offsetY by remember { mutableFloatStateOf(0f) }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -173,88 +181,123 @@ fun AnnotationScreen(
                     .onSizeChanged {
                         canvasWidth = it.width.toFloat()
                         canvasHeight = it.height.toFloat()
-                    },
-            ) {
-                Image(
-                    bitmap = pageImage,
-                    contentDescription = "Page",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-
-                androidx.compose.foundation.Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
+                    }
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            var isDrawing = false
                             var localPoints = listOf<Offset>()
-                            detectDragGestures(
-                                onDragStart = { offset ->
-                                    if (currentSelectedTool.value == AnnotationTool.ERASER) {
-                                        eraserPosition = offset
-                                        strokes = eraseStrokesAt(currentStrokes.value, offset)
+
+                            do {
+                                val event = awaitPointerEvent()
+                                val pointerCount = event.changes.count { it.pressed }
+
+                                if (pointerCount >= 2) {
+                                    // Zoom / Pan
+                                    val zoom = event.calculateZoom()
+                                    val pan = event.calculatePan()
+                                    scale = (scale * zoom).coerceIn(1f, 5f)
+                                    if (scale > 1f) {
+                                        offsetX += pan.x
+                                        offsetY += pan.y
                                     } else {
-                                        localPoints = listOf(offset)
-                                        currentPoints = localPoints
+                                        offsetX = 0f
+                                        offsetY = 0f
                                     }
-                                },
-                                onDrag = { change, _ ->
-                                    change.consume()
-                                    if (currentSelectedTool.value == AnnotationTool.ERASER) {
-                                        eraserPosition = change.position
-                                        strokes = eraseStrokesAt(currentStrokes.value, change.position)
-                                    } else {
-                                        localPoints = localPoints + change.position
-                                        currentPoints = localPoints
-                                    }
-                                },
-                                onDragEnd = {
-                                    if (currentSelectedTool.value == AnnotationTool.ERASER) {
-                                        eraserPosition = null
-                                    } else {
-                                        if (localPoints.size >= 2) {
-                                            strokes = strokes + StrokePath(
-                                                localPoints,
-                                                currentSelectedColor.value.copy(alpha = currentToolAlpha.value),
-                                                currentToolWidth.value,
-                                            )
+                                    event.changes.forEach { it.consume() }
+                                } else if (pointerCount == 1) {
+                                    // Drawing
+                                    val change = event.changes.firstOrNull { it.pressed } ?: break
+                                    
+                                    val centerX = canvasWidth / 2f
+                                    val centerY = canvasHeight / 2f
+                                    val canvasX = (change.position.x - centerX - offsetX) / scale + centerX
+                                    val canvasY = (change.position.y - centerY - offsetY) / scale + centerY
+                                    val canvasPos = Offset(canvasX, canvasY)
+
+                                    if (!isDrawing) {
+                                        isDrawing = true
+                                        if (currentSelectedTool.value == AnnotationTool.ERASER) {
+                                            eraserPosition = canvasPos
+                                            strokes = eraseStrokesAt(currentStrokes.value, canvasPos)
+                                        } else {
+                                            localPoints = listOf(canvasPos)
+                                            currentPoints = localPoints
                                         }
-                                        localPoints = emptyList()
-                                        currentPoints = emptyList()
+                                    } else {
+                                        if (currentSelectedTool.value == AnnotationTool.ERASER) {
+                                            eraserPosition = canvasPos
+                                            strokes = eraseStrokesAt(currentStrokes.value, canvasPos)
+                                        } else {
+                                            localPoints = localPoints + canvasPos
+                                            currentPoints = localPoints
+                                        }
                                     }
-                                },
-                                onDragCancel = {
+                                    change.consume()
+                                }
+                            } while (event.changes.any { it.pressed })
+
+                            if (isDrawing) {
+                                if (currentSelectedTool.value == AnnotationTool.ERASER) {
                                     eraserPosition = null
+                                } else {
+                                    if (localPoints.size >= 2) {
+                                        strokes = strokes + StrokePath(
+                                            localPoints,
+                                            currentSelectedColor.value.copy(alpha = currentToolAlpha.value),
+                                            currentToolWidth.value,
+                                        )
+                                    }
                                     localPoints = emptyList()
                                     currentPoints = emptyList()
-                                },
-                            )
-                        },
+                                }
+                            }
+                        }
+                    },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offsetX
+                            translationY = offsetY
+                        }
                 ) {
-                    // Draw completed strokes
-                    strokes.forEach { stroke ->
-                        drawAnnotationStroke(stroke.points, stroke.color, stroke.width)
-                    }
-                    // Draw current stroke
-                    if (currentPoints.size >= 2 && selectedTool != AnnotationTool.ERASER) {
-                        drawAnnotationStroke(
-                            currentPoints,
-                            selectedColor.copy(alpha = toolAlpha),
-                            toolWidth,
-                        )
-                    }
-                    // Draw eraser footprint preview
-                    if (selectedTool == AnnotationTool.ERASER && eraserPosition != null) {
-                        drawCircle(
-                            color = Color.Gray.copy(alpha = 0.15f),
-                            radius = 35f,
-                            center = eraserPosition!!
-                        )
-                        drawCircle(
-                            color = Color.Gray.copy(alpha = 0.5f),
-                            radius = 35f,
-                            center = eraserPosition!!,
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
-                        )
+                    Image(
+                        bitmap = pageImage,
+                        contentDescription = "Page",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
+                    androidx.compose.foundation.Canvas(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        strokes.forEach { stroke ->
+                            drawAnnotationStroke(stroke.points, stroke.color, stroke.width)
+                        }
+                        if (currentPoints.size >= 2 && selectedTool != AnnotationTool.ERASER) {
+                            drawAnnotationStroke(
+                                currentPoints,
+                                selectedColor.copy(alpha = toolAlpha),
+                                toolWidth,
+                            )
+                        }
+                        if (selectedTool == AnnotationTool.ERASER && eraserPosition != null) {
+                            drawCircle(
+                                color = Color.Gray.copy(alpha = 0.15f),
+                                radius = 35f,
+                                center = eraserPosition!!
+                            )
+                            drawCircle(
+                                color = Color.Gray.copy(alpha = 0.5f),
+                                radius = 35f,
+                                center = eraserPosition!!,
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
+                            )
+                        }
                     }
                 }
             }

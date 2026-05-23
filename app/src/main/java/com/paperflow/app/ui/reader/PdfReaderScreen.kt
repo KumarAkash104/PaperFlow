@@ -167,7 +167,7 @@ fun PdfReaderScreen(
                         translationY = offsetY
                     }
                     // Pinch-to-zoom AND single-finger pan when zoomed
-                    .pointerInput(scale) {
+                    .pointerInput(Unit) {
                         awaitEachGesture {
                             awaitFirstDown(requireUnconsumed = false)
                             do {
@@ -213,23 +213,43 @@ fun PdfReaderScreen(
                         detectTapGestures(
                             onDoubleTap = { tapOffset ->
                                 if (scale > 1.1f) {
-                                    // Currently zoomed → reset
-                                    scale = 1f
-                                    offsetX = 0f
-                                    offsetY = 0f
+                                    // Currently zoomed → reset smoothly
+                                    scope.launch {
+                                        val startScale = scale
+                                        val startOffsetX = offsetX
+                                        val startOffsetY = offsetY
+                                        
+                                        androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(300)) { value, _ ->
+                                            scale = startScale + (1f - startScale) * value
+                                            offsetX = startOffsetX + (0f - startOffsetX) * value
+                                            offsetY = startOffsetY + (0f - startOffsetY) * value
+                                        }
+                                    }
                                 } else {
-                                    // Zoom to 2.5x centered on tap point
+                                    // Zoom to 2.5x centered on tap point smoothly
                                     val targetScale = 2.5f
                                     // Calculate offset so tap point stays at same screen position
                                     val centerX = size.width / 2f
                                     val centerY = size.height / 2f
-                                    offsetX = (centerX - tapOffset.x) * (targetScale - 1f)
-                                    offsetY = (centerY - tapOffset.y) * (targetScale - 1f)
+                                    var targetOffsetX = (centerX - tapOffset.x) * (targetScale - 1f)
+                                    var targetOffsetY = (centerY - tapOffset.y) * (targetScale - 1f)
+                                    
                                     val maxX = (size.width * (targetScale - 1f)) / 2f
                                     val maxY = (size.height * (targetScale - 1f)) / 2f
-                                    offsetX = offsetX.coerceIn(-maxX, maxX)
-                                    offsetY = offsetY.coerceIn(-maxY, maxY)
-                                    scale = targetScale
+                                    targetOffsetX = targetOffsetX.coerceIn(-maxX, maxX)
+                                    targetOffsetY = targetOffsetY.coerceIn(-maxY, maxY)
+                                    
+                                    scope.launch {
+                                        val startScale = scale
+                                        val startOffsetX = offsetX
+                                        val startOffsetY = offsetY
+                                        
+                                        androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(300)) { value, _ ->
+                                            scale = startScale + (targetScale - startScale) * value
+                                            offsetX = startOffsetX + (targetOffsetX - startOffsetX) * value
+                                            offsetY = startOffsetY + (targetOffsetY - startOffsetY) * value
+                                        }
+                                    }
                                 }
                             }
                         )

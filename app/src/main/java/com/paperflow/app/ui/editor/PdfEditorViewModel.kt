@@ -104,14 +104,22 @@ class PdfEditorViewModel(
             for (i in 0 until renderer.pageCount) {
                 val page = renderer.openPage(i)
                 
-                // standard A4 or letter sizing is ~612x792 pts, render at a high-res (e.g. 1200px width)
-                val targetWidth = 1200
-                val scale = targetWidth.toFloat() / page.width.toFloat()
-                val targetHeight = (page.height * scale).toInt()
+                // render at high-res (300 dpi, max 3500px)
+                val densityDpi = 300
+                var targetWidth = (page.width * densityDpi / 72.0).toInt()
+                var targetHeight = (page.height * densityDpi / 72.0).toInt()
+                val maxDim = maxOf(targetWidth, targetHeight)
+                if (maxDim > 3500) {
+                    val scale = 3500.0 / maxDim
+                    targetWidth = (targetWidth * scale).toInt()
+                    targetHeight = (targetHeight * scale).toInt()
+                }
 
-                val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-                bitmap.eraseColor(android.graphics.Color.WHITE)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+                if (bitmap == null) {
+                    page.close()
+                    continue
+                }
 
                 val pageFile = File(cacheDir, "page_${file.name.hashCode()}_$i.jpg")
                 pageFile.outputStream().use { out ->
