@@ -79,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.asImageBitmap
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import java.io.File
@@ -645,19 +646,42 @@ fun PaperPage(
     }
 }
 
-/** Subtle paper grain overlay. */
+/** Subtle paper grain overlay — cached as a bitmap for performance. */
 @Composable
 fun PaperTextureOverlay(isDark: Boolean) {
     val grainAlpha = if (isDark) 0.04f else 0.025f
-    val grainColor = if (isDark) Color.White else Color.Black
-    Canvas(modifier = Modifier.fillMaxSize().alpha(grainAlpha)) {
+    val grainColor = if (isDark) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+    // Generate grain bitmap once per theme, reuse across frames
+    val grainBitmap = remember(isDark) {
+        val bw = 200
+        val bh = 200
+        val bmp = android.graphics.Bitmap.createBitmap(bw, bh, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
         val random = Random(42)
-        val dotCount = (size.width * size.height / 800f).toInt().coerceAtMost(8000)
+        val dotCount = 400
         for (i in 0 until dotCount) {
-            val x = random.nextFloat() * size.width
-            val y = random.nextFloat() * size.height
+            val x = random.nextFloat() * bw
+            val y = random.nextFloat() * bh
             val r = random.nextFloat() * 1.2f + 0.3f
-            drawCircle(grainColor, r, Offset(x, y), alpha = random.nextFloat() * 0.6f + 0.2f)
+            val a = ((random.nextFloat() * 0.6f + 0.2f) * 255).toInt()
+            paint.color = grainColor
+            paint.alpha = a
+            canvas.drawCircle(x, y, r, paint)
+        }
+        bmp
+    }
+    Canvas(modifier = Modifier.fillMaxSize().alpha(grainAlpha)) {
+        val imageBitmap = grainBitmap.asImageBitmap()
+        // Tile the small grain texture across the whole screen
+        var y = 0f
+        while (y < size.height) {
+            var x = 0f
+            while (x < size.width) {
+                drawImage(imageBitmap, topLeft = Offset(x, y))
+                x += grainBitmap.width
+            }
+            y += grainBitmap.height
         }
     }
 }

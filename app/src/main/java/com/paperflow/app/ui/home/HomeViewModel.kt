@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -98,7 +99,7 @@ class HomeViewModel(
             SortOption.NAME_ASC -> docs.sortedBy { it.title.lowercase() }
             SortOption.PAGE_COUNT -> docs.sortedByDescending { it.pageCount }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val photos: StateFlow<List<PhotoEntity>> = kotlinx.coroutines.flow.combine(
@@ -114,7 +115,7 @@ class HomeViewModel(
             SortOption.NAME_ASC -> pts.sortedBy { it.title.lowercase() }
             SortOption.PAGE_COUNT -> pts.sortedByDescending { it.fileSize }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query

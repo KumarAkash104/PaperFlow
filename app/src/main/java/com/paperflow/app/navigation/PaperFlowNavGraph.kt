@@ -115,20 +115,7 @@ fun PaperFlowNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.Review.createRoute(docId))
                 },
                 onReadPdf = { docId ->
-                    scope.launch {
-                        val pages = withContext(Dispatchers.IO) {
-                            repository.getPagesSync(docId)
-                        }
-                        if (pages.isNotEmpty()) {
-                            val paths = pages.map { it.imagePath }
-                            val outFile = withContext(Dispatchers.IO) {
-                                val f = PdfExporter.createExportFile(context, "read_${docId}", "pdf")
-                                PdfExporter.exportToPdf(context, paths, PageSize.AUTO, ExportQuality.HIGH, f)
-                                f
-                            }
-                            navController.navigate(Screen.PdfReader.createRoute(outFile.absolutePath))
-                        }
-                    }
+                    navController.navigate(Screen.DocumentReader.createRoute(docId))
                 },
                 onPhotoClick = { photoId ->
                     navController.navigate(Screen.PhotoEditor.createRoute(photoId))
@@ -307,6 +294,40 @@ fun PaperFlowNavGraph(navController: NavHostController) {
             )
         }
 
+        // ── Document Reader (image-based, no PDF re-export) ──
+        composable(
+            route = Screen.DocumentReader.route,
+            arguments = listOf(
+                navArgument("documentId") { type = NavType.StringType }
+            )
+        ) { backStack ->
+            val docId = backStack.arguments?.getString("documentId") ?: return@composable
+
+            // Load page paths once and create viewModel with image paths
+            var viewModel by remember { mutableStateOf<PdfReaderViewModel?>(null) }
+
+            LaunchedEffect(docId) {
+                val doc = withContext(Dispatchers.IO) { repository.getDocument(docId) }
+                val pages = withContext(Dispatchers.IO) { repository.getPagesSync(docId) }
+                val imagePaths = pages.sortedBy { it.pageIndex }.map { it.imagePath }
+                if (imagePaths.isNotEmpty()) {
+                    viewModel = PdfReaderViewModel(
+                        appContext = context.applicationContext,
+                        pdfPath = doc?.title ?: "Document",
+                        repository = repository,
+                        imagePagePaths = imagePaths
+                    )
+                }
+            }
+
+            viewModel?.let { vm ->
+                PdfReaderScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+
         // ── Settings ──
         composable(Screen.Settings.route) {
             SettingsScreen(
@@ -329,17 +350,21 @@ fun PaperFlowNavGraph(navController: NavHostController) {
                 onBack = { navController.popBackStack() },
                 onSave = { signatureBitmap, shouldSave ->
                     if (shouldSave) {
-                        // Save signature to Room for reuse
-                        val sigDir = File(context.filesDir, "signatures")
-                        if (!sigDir.exists()) sigDir.mkdirs()
-                        val sigFile = File(sigDir, "sig_${System.currentTimeMillis()}.png")
-                        sigFile.outputStream().use {
-                            signatureBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-                        }
+                        // Save signature to Room for reuse (on IO thread)
                         scope.launch(Dispatchers.IO) {
-                            db.signatureDao().insertSignature(
-                                SignatureEntity(imagePath = sigFile.absolutePath),
-                            )
+                            try {
+                                val sigDir = File(context.filesDir, "signatures")
+                                if (!sigDir.exists()) sigDir.mkdirs()
+                                val sigFile = File(sigDir, "sig_${System.currentTimeMillis()}.png")
+                                sigFile.outputStream().use {
+                                    signatureBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                                }
+                                db.signatureDao().insertSignature(
+                                    SignatureEntity(imagePath = sigFile.absolutePath),
+                                )
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
                     }
 

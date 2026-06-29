@@ -531,59 +531,64 @@ object ImageProcessor {
      * Great for making handwritten/printed text legible.
      */
     private fun documentScan(src: Bitmap): Bitmap {
-        val w = src.width; val h = src.height
-        val pixels = IntArray(w * h)
-        src.getPixels(pixels, 0, w, 0, 0, w, h)
+        try {
+            val w = src.width; val h = src.height
+            val pixels = IntArray(w * h)
+            src.getPixels(pixels, 0, w, 0, 0, w, h)
 
-        // Compute grayscale in-place
-        for (i in pixels.indices) {
-            val p = pixels[i]
-            val r = Color.red(p)
-            val g = Color.green(p)
-            val b = Color.blue(p)
-            pixels[i] = ((0.299 * r + 0.587 * g + 0.114 * b).toInt()).coerceIn(0, 255)
-        }
-
-        // Local adaptive background estimation using block averaging
-        val blockSize = max(w, h) / 48
-        // Build integral image
-        val integral = LongArray(w * h)
-        for (y in 0 until h) {
-            var rowSum = 0L
-            for (x in 0 until w) {
-                rowSum += pixels[y * w + x]
-                integral[y * w + x] = rowSum + if (y > 0) integral[(y - 1) * w + x] else 0
+            // Compute grayscale in-place
+            for (i in pixels.indices) {
+                val p = pixels[i]
+                val r = Color.red(p)
+                val g = Color.green(p)
+                val b = Color.blue(p)
+                pixels[i] = ((0.299 * r + 0.587 * g + 0.114 * b).toInt()).coerceIn(0, 255)
             }
-        }
 
-        for (y in 0 until h) {
-            for (x in 0 until w) {
-                val x0 = max(0, x - blockSize)
-                val y0 = max(0, y - blockSize)
-                val x1 = min(w - 1, x + blockSize)
-                val y1 = min(h - 1, y + blockSize)
-                val count = (x1 - x0 + 1) * (y1 - y0 + 1)
-                var sum = integral[y1 * w + x1]
-                if (x0 > 0) sum -= integral[y1 * w + x0 - 1]
-                if (y0 > 0) sum -= integral[(y0 - 1) * w + x1]
-                if (x0 > 0 && y0 > 0) sum += integral[(y0 - 1) * w + x0 - 1]
-                val localBg = (sum / count).toInt()
-
-                // Normalize: map pixel so that localBg → 255 (white)
-                val lum = pixels[y * w + x]
-                val ratio = if (localBg > 10) (lum.toFloat() / localBg) else (lum / 128f)
-                val newLum = (ratio * 255f).toInt().coerceIn(0, 255)
-
-                // Boost contrast of normalized value
-                val boosted = ((newLum - 128) * 1.6f + 128).toInt().coerceIn(0, 255)
-                pixels[y * w + x] = Color.argb(255, boosted, boosted, boosted)
+            // Local adaptive background estimation using block averaging
+            val blockSize = max(w, h) / 48
+            // Build integral image
+            val integral = LongArray(w * h)
+            for (y in 0 until h) {
+                var rowSum = 0L
+                for (x in 0 until w) {
+                    rowSum += pixels[y * w + x]
+                    integral[y * w + x] = rowSum + if (y > 0) integral[(y - 1) * w + x] else 0
+                }
             }
-        }
 
-        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        result.setPixels(pixels, 0, w, 0, 0, w, h)
-        // Light sharpen pass to make text crisp
-        return sharpenWithAmount(result, 0.4f)
+            for (y in 0 until h) {
+                for (x in 0 until w) {
+                    val x0 = max(0, x - blockSize)
+                    val y0 = max(0, y - blockSize)
+                    val x1 = min(w - 1, x + blockSize)
+                    val y1 = min(h - 1, y + blockSize)
+                    val count = (x1 - x0 + 1) * (y1 - y0 + 1)
+                    var sum = integral[y1 * w + x1]
+                    if (x0 > 0) sum -= integral[y1 * w + x0 - 1]
+                    if (y0 > 0) sum -= integral[(y0 - 1) * w + x1]
+                    if (x0 > 0 && y0 > 0) sum += integral[(y0 - 1) * w + x0 - 1]
+                    val localBg = (sum / count).toInt()
+
+                    // Normalize: map pixel so that localBg → 255 (white)
+                    val lum = pixels[y * w + x]
+                    val ratio = if (localBg > 10) (lum.toFloat() / localBg) else (lum / 128f)
+                    val newLum = (ratio * 255f).toInt().coerceIn(0, 255)
+
+                    // Boost contrast of normalized value
+                    val boosted = ((newLum - 128) * 1.6f + 128).toInt().coerceIn(0, 255)
+                    pixels[y * w + x] = Color.argb(255, boosted, boosted, boosted)
+                }
+            }
+
+            val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            result.setPixels(pixels, 0, w, 0, 0, w, h)
+            // Light sharpen pass to make text crisp
+            return sharpenWithAmount(result, 0.4f)
+        } catch (e: OutOfMemoryError) {
+            android.util.Log.e("ImageProcessor", "OOM in documentScan, returning original bitmap", e)
+            return src
+        }
     }
 
     /**
@@ -674,126 +679,138 @@ object ImageProcessor {
             }
 
             val sBlockSize = max(sw, sh) / 12
-            for (y in 0 until h) {
-                for (x in 0 until w) {
-                    val sx = x / scale
-                    val sy = y / scale
-                    
+
+            // Pre-compute local background into a lookup array
+            val localBgArray = IntArray(sw * sh)
+            for (sy in 0 until sh) {
+                for (sx in 0 until sw) {
                     val sx0 = max(0, sx - sBlockSize)
                     val sy0 = max(0, sy - sBlockSize)
                     val sx1 = min(sw - 1, sx + sBlockSize)
                     val sy1 = min(sh - 1, sy + sBlockSize)
                     val count = (sx1 - sx0 + 1) * (sy1 - sy0 + 1)
-                
-                var sum = integral[sy1 * sw + sx1]
-                if (sx0 > 0) sum -= integral[sy1 * sw + sx0 - 1]
-                if (sy0 > 0) sum -= integral[(sy0 - 1) * sw + sx1]
-                if (sx0 > 0 && sy0 > 0) sum += integral[(sy0 - 1) * sw + sx0 - 1]
-                val localBg = (sum / count).coerceAtLeast(1)
-
-                val idx = y * w + x
-                val p = pixels[idx]
-                val r = Color.red(p)
-                val g = Color.green(p)
-                val b = Color.blue(p)
-
-                var ratioR = r.toFloat() / localBg
-                var ratioG = g.toFloat() / localBg
-                var ratioB = b.toFloat() / localBg
-
-                ratioR = ratioR * ratioR * ratioR
-                ratioG = ratioG * ratioG * ratioG
-                ratioB = ratioB * ratioB * ratioB
-
-                val nr = ratioR * 255f
-                val ng = ratioG * 255f
-                val nb = ratioB * 255f
-
-                val lum = nr * 0.299f + ng * 0.587f + nb * 0.114f
-                val satFactor = 1.6f
-                var cr = lum + (nr - lum) * satFactor
-                var cg = lum + (ng - lum) * satFactor
-                var cb = lum + (nb - lum) * satFactor
-
-                cr = ((cr - 128f) * 1.5f + 128f)
-                cg = ((cg - 128f) * 1.5f + 128f)
-                cb = ((cb - 128f) * 1.5f + 128f)
-
-                val ri = cr.toInt().coerceIn(0, 255)
-                val gi = cg.toInt().coerceIn(0, 255)
-                val bi = cb.toInt().coerceIn(0, 255)
-                pixels[idx] = (255 shl 24) or (ri shl 16) or (gi shl 8) or bi
+                    var sum = integral[sy1 * sw + sx1]
+                    if (sx0 > 0) sum -= integral[sy1 * sw + sx0 - 1]
+                    if (sy0 > 0) sum -= integral[(sy0 - 1) * sw + sx1]
+                    if (sx0 > 0 && sy0 > 0) sum += integral[(sy0 - 1) * sw + sx0 - 1]
+                    localBgArray[sy * sw + sx] = (sum / count).coerceAtLeast(1)
+                }
             }
-        }
 
-        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        result.setPixels(pixels, 0, w, 0, 0, w, h)
-        return sharpenWithAmount(result, 0.5f)
-    } catch (e: OutOfMemoryError) {
-        android.util.Log.e("ImageProcessor", "OOM in magicColor, returning original bitmap", e)
-        return src
-    }
+            for (y in 0 until h) {
+                for (x in 0 until w) {
+                    val sx = x / scale
+                    val sy = y / scale
+                    val localBg = localBgArray[sy * sw + sx]
+
+                    val idx = y * w + x
+                    val p = pixels[idx]
+                    val r = Color.red(p)
+                    val g = Color.green(p)
+                    val b = Color.blue(p)
+
+                    var ratioR = r.toFloat() / localBg
+                    var ratioG = g.toFloat() / localBg
+                    var ratioB = b.toFloat() / localBg
+
+                    ratioR = ratioR * ratioR * ratioR
+                    ratioG = ratioG * ratioG * ratioG
+                    ratioB = ratioB * ratioB * ratioB
+
+                    val nr = ratioR * 255f
+                    val ng = ratioG * 255f
+                    val nb = ratioB * 255f
+
+                    val lum = nr * 0.299f + ng * 0.587f + nb * 0.114f
+                    val satFactor = 1.6f
+                    var cr = lum + (nr - lum) * satFactor
+                    var cg = lum + (ng - lum) * satFactor
+                    var cb = lum + (nb - lum) * satFactor
+
+                    cr = ((cr - 128f) * 1.5f + 128f)
+                    cg = ((cg - 128f) * 1.5f + 128f)
+                    cb = ((cb - 128f) * 1.5f + 128f)
+
+                    val ri = cr.toInt().coerceIn(0, 255)
+                    val gi = cg.toInt().coerceIn(0, 255)
+                    val bi = cb.toInt().coerceIn(0, 255)
+                    pixels[idx] = (255 shl 24) or (ri shl 16) or (gi shl 8) or bi
+                }
+            }
+
+            val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            result.setPixels(pixels, 0, w, 0, 0, w, h)
+            return sharpenWithAmount(result, 0.5f)
+        } catch (e: OutOfMemoryError) {
+            android.util.Log.e("ImageProcessor", "OOM in magicColor, returning original bitmap", e)
+            return src
+        }
     }
 
     private fun kindlePaperwhite(src: Bitmap): Bitmap {
-        val w = src.width; val h = src.height
-        val pixels = IntArray(w * h)
-        src.getPixels(pixels, 0, w, 0, 0, w, h)
+        try {
+            val w = src.width; val h = src.height
+            val pixels = IntArray(w * h)
+            src.getPixels(pixels, 0, w, 0, 0, w, h)
 
-        val gray = IntArray(w * h)
-        for (i in pixels.indices) {
-            val r = Color.red(pixels[i])
-            val g = Color.green(pixels[i])
-            val b = Color.blue(pixels[i])
-            gray[i] = ((0.299f * r + 0.587f * g + 0.114f * b).toInt()).coerceIn(0, 255)
-        }
-
-        val blockSize = max(w, h) / 48
-        val integral = LongArray(w * h)
-        for (y in 0 until h) {
-            var rowSum = 0L
-            for (x in 0 until w) {
-                rowSum += gray[y * w + x]
-                integral[y * w + x] = rowSum + if (y > 0) integral[(y - 1) * w + x] else 0
+            val gray = IntArray(w * h)
+            for (i in pixels.indices) {
+                val r = Color.red(pixels[i])
+                val g = Color.green(pixels[i])
+                val b = Color.blue(pixels[i])
+                gray[i] = ((0.299f * r + 0.587f * g + 0.114f * b).toInt()).coerceIn(0, 255)
             }
-        }
 
-        val out = IntArray(w * h)
-        for (y in 0 until h) {
-            for (x in 0 until w) {
-                val x0 = max(0, x - blockSize)
-                val y0 = max(0, y - blockSize)
-                val x1 = min(w - 1, x + blockSize)
-                val y1 = min(h - 1, y + blockSize)
-                val count = (x1 - x0 + 1) * (y1 - y0 + 1)
-                
-                var sum = integral[y1 * w + x1]
-                if (x0 > 0) sum -= integral[y1 * w + x0 - 1]
-                if (y0 > 0) sum -= integral[(y0 - 1) * w + x1]
-                if (x0 > 0 && y0 > 0) sum += integral[(y0 - 1) * w + x0 - 1]
-                val localBg = (sum / count).toInt().coerceAtLeast(1)
-
-                val lum = gray[y * w + x]
-                var ratio = lum.toFloat() / localBg
-                
-                ratio = Math.pow(ratio.toDouble(), 4.0).toFloat()
-                
-                var v = (ratio * 255f).coerceIn(0f, 255f)
-                v = ((v - 128f) * 2.0f + 128f).coerceIn(0f, 255f)
-                
-                val fgColor = 30f
-                val bgColor = 235f
-                
-                val finalColor = fgColor + (v / 255f) * (bgColor - fgColor)
-                val c = finalColor.toInt().coerceIn(0, 255)
-                
-                out[y * w + x] = Color.argb(255, c, c, c)
+            val blockSize = max(w, h) / 48
+            val integral = LongArray(w * h)
+            for (y in 0 until h) {
+                var rowSum = 0L
+                for (x in 0 until w) {
+                    rowSum += gray[y * w + x]
+                    integral[y * w + x] = rowSum + if (y > 0) integral[(y - 1) * w + x] else 0
+                }
             }
-        }
 
-        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        result.setPixels(out, 0, w, 0, 0, w, h)
-        return sharpenWithAmount(result, 0.4f)
+            val out = IntArray(w * h)
+            for (y in 0 until h) {
+                for (x in 0 until w) {
+                    val x0 = max(0, x - blockSize)
+                    val y0 = max(0, y - blockSize)
+                    val x1 = min(w - 1, x + blockSize)
+                    val y1 = min(h - 1, y + blockSize)
+                    val count = (x1 - x0 + 1) * (y1 - y0 + 1)
+                    
+                    var sum = integral[y1 * w + x1]
+                    if (x0 > 0) sum -= integral[y1 * w + x0 - 1]
+                    if (y0 > 0) sum -= integral[(y0 - 1) * w + x1]
+                    if (x0 > 0 && y0 > 0) sum += integral[(y0 - 1) * w + x0 - 1]
+                    val localBg = (sum / count).toInt().coerceAtLeast(1)
+
+                    val lum = gray[y * w + x]
+                    var ratio = lum.toFloat() / localBg
+                    
+                    ratio = Math.pow(ratio.toDouble(), 4.0).toFloat()
+                    
+                    var v = (ratio * 255f).coerceIn(0f, 255f)
+                    v = ((v - 128f) * 2.0f + 128f).coerceIn(0f, 255f)
+                    
+                    val fgColor = 30f
+                    val bgColor = 235f
+                    
+                    val finalColor = fgColor + (v / 255f) * (bgColor - fgColor)
+                    val c = finalColor.toInt().coerceIn(0, 255)
+                    
+                    out[y * w + x] = Color.argb(255, c, c, c)
+                }
+            }
+
+            val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            result.setPixels(out, 0, w, 0, 0, w, h)
+            return sharpenWithAmount(result, 0.4f)
+        } catch (e: OutOfMemoryError) {
+            android.util.Log.e("ImageProcessor", "OOM in kindlePaperwhite, returning original bitmap", e)
+            return src
+        }
     }
 
     private fun highContrast(src: Bitmap): Bitmap {

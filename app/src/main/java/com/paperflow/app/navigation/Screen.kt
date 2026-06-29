@@ -43,6 +43,10 @@ sealed class Screen(val route: String) {
         fun createRoute(pdfPath: String) = "pdf_reader/${android.net.Uri.encode(pdfPath)}"
     }
 
+    data object DocumentReader : Screen("doc_reader/{documentId}") {
+        fun createRoute(documentId: String) = "doc_reader/$documentId"
+    }
+
     data object PhotoEditor : Screen("photo_editor/{photoId}") {
         fun createRoute(photoId: String) = "photo_editor/$photoId"
     }

@@ -170,58 +170,76 @@ object ImageFilters {
 
     // DSLR Depth / Tilt shift blur
     private fun applyDslrBlur(src: Bitmap, isRadial: Boolean): Bitmap {
-        val blurred = fastBoxBlur(src, 16)
-        val result = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-        
-        canvas.drawBitmap(blurred, 0f, 0f, null)
+        var blurred: Bitmap? = null
+        var mask: Bitmap? = null
+        var temp: Bitmap? = null
+        var result: Bitmap? = null
+        try {
+            blurred = fastBoxBlur(src, 16)
+            result = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(result)
+            
+            canvas.drawBitmap(blurred, 0f, 0f, null)
 
-        val mask = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
-        val maskCanvas = Canvas(mask)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            mask = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+            val maskCanvas = Canvas(mask)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-        if (isRadial) {
-            // Radial mask for Portrait
-            val cx = src.width / 2f
-            val cy = src.height * 0.4f
-            val radius = minOf(src.width, src.height) * 0.35f
-            val gradient = RadialGradient(
-                cx, cy, radius * 1.5f,
-                intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT),
-                floatArrayOf(0f, 0.4f, 1f),
-                Shader.TileMode.CLAMP
-            )
-            paint.shader = gradient
-        } else {
-            // Linear mask for Tilt Shift
-            val gradient = LinearGradient(
-                0f, 0f, 0f, src.height.toFloat(),
-                intArrayOf(Color.TRANSPARENT, Color.BLACK, Color.BLACK, Color.TRANSPARENT),
-                floatArrayOf(0f, 0.35f, 0.65f, 1f),
-                Shader.TileMode.CLAMP
-            )
-            paint.shader = gradient
+            if (isRadial) {
+                // Radial mask for Portrait
+                val cx = src.width / 2f
+                val cy = src.height * 0.4f
+                val radius = minOf(src.width, src.height) * 0.35f
+                val gradient = RadialGradient(
+                    cx, cy, radius * 1.5f,
+                    intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT),
+                    floatArrayOf(0f, 0.4f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                paint.shader = gradient
+            } else {
+                // Linear mask for Tilt Shift
+                val gradient = LinearGradient(
+                    0f, 0f, 0f, src.height.toFloat(),
+                    intArrayOf(Color.TRANSPARENT, Color.BLACK, Color.BLACK, Color.TRANSPARENT),
+                    floatArrayOf(0f, 0.35f, 0.65f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                paint.shader = gradient
+            }
+
+            maskCanvas.drawRect(0f, 0f, src.width.toFloat(), src.height.toFloat(), paint)
+
+            // Draw original bitmap through the mask onto the blurred bitmap
+            val blendPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+            }
+            
+            temp = src.copy(Bitmap.Config.ARGB_8888, true)
+            val tempCanvas = Canvas(temp)
+            tempCanvas.drawBitmap(mask, 0f, 0f, blendPaint)
+            
+            canvas.drawBitmap(temp, 0f, 0f, null)
+            
+            // Clean up
+            mask.recycle()
+            temp.recycle()
+            blurred.recycle()
+            
+            return result
+        } catch (e: OutOfMemoryError) {
+            blurred?.let { if (!it.isRecycled) it.recycle() }
+            mask?.let { if (!it.isRecycled) it.recycle() }
+            temp?.let { if (!it.isRecycled) it.recycle() }
+            result?.let { if (!it.isRecycled) it.recycle() }
+            return src.copy(src.config ?: Bitmap.Config.ARGB_8888, true)
+        } catch (e: Exception) {
+            blurred?.let { if (!it.isRecycled) it.recycle() }
+            mask?.let { if (!it.isRecycled) it.recycle() }
+            temp?.let { if (!it.isRecycled) it.recycle() }
+            result?.let { if (!it.isRecycled) it.recycle() }
+            return src.copy(src.config ?: Bitmap.Config.ARGB_8888, true)
         }
-
-        maskCanvas.drawRect(0f, 0f, src.width.toFloat(), src.height.toFloat(), paint)
-
-        // Draw original bitmap through the mask onto the blurred bitmap
-        val blendPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-        }
-        
-        val temp = src.copy(Bitmap.Config.ARGB_8888, true)
-        val tempCanvas = Canvas(temp)
-        tempCanvas.drawBitmap(mask, 0f, 0f, blendPaint)
-        
-        canvas.drawBitmap(temp, 0f, 0f, null)
-        
-        // Clean up
-        mask.recycle()
-        temp.recycle()
-        blurred.recycle()
-        
-        return result
     }
 
     private fun applyColorFilter(src: Bitmap, matrix: ColorMatrix): Bitmap {

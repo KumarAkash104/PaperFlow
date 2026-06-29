@@ -24,12 +24,12 @@ object SignatureExtractor {
      *                     Default 30 works well for black ink on white paper.
      * @return Bitmap with transparent background containing only the signature strokes
      */
-    fun extract(src: Bitmap, sensitivity: Int = 30): Bitmap {
+    fun extract(src: Bitmap, sensitivity: Int = 20): Bitmap {
         val w = src.width
         val h = src.height
 
-        // Work on a manageable size for speed
-        val maxDim = 1500
+        // Work on a manageable size for speed — higher = better quality
+        val maxDim = 2500
         val scale = if (max(w, h) > maxDim) maxDim.toFloat() / max(w, h) else 1f
         val workW = (w * scale).toInt().coerceAtLeast(1)
         val workH = (h * scale).toInt().coerceAtLeast(1)
@@ -81,7 +81,7 @@ object SignatureExtractor {
                 // Pixel is ink if it's significantly darker than its neighbourhood (soft transparency)
                 val diff = localMean - pixelVal
                 if (diff > threshold) {
-                    val transitionWidth = 15f
+                    val transitionWidth = 25f
                     val alpha = (((diff - threshold) / transitionWidth) * 255f).toInt().coerceIn(0, 255)
                     if (alpha > 0) {
                         val origColor = pixels[y * workW + x]

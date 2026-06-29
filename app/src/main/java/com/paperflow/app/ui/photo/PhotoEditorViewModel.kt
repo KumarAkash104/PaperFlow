@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -121,7 +123,7 @@ class PhotoEditorViewModel(
                 }
 
                 val bitmap = withContext(Dispatchers.IO) {
-                    BitmapFactory.decodeFile(photo.imagePath)
+                    com.paperflow.app.util.ImageProcessor.loadBitmap(photo.imagePath, 4000)
                 }
 
                 if (bitmap == null) {
@@ -510,7 +512,7 @@ class PhotoEditorViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
                 val bitmap = withContext(Dispatchers.IO) {
-                    BitmapFactory.decodeFile(origFile.absolutePath)
+                    com.paperflow.app.util.ImageProcessor.loadBitmap(origFile.absolutePath, 4000)
                 }
                 if (bitmap != null) {
                     clearUndoStack()
@@ -593,8 +595,22 @@ class PhotoEditorViewModel(
                 val thumbHeight = 120
                 val thumb = Bitmap.createScaledBitmap(src, thumbWidth, thumbHeight, true)
                 
-                val previews = ImageFilters.Filter.values().associateWith { filter ->
-                    ImageFilters.applyFilter(thumb, filter)
+                // Generate all filter previews in parallel for speed
+                val filters = ImageFilters.Filter.values()
+                val deferredList = filters.map { filter ->
+                    async(Dispatchers.Default) {
+                        val result: Bitmap? = try {
+                            ImageFilters.applyFilter(thumb, filter)
+                        } catch (e: Exception) {
+                            null
+                        }
+                        Pair(filter, result)
+                    }
+                }
+                val results = deferredList.map { it.await() }
+                val previews = mutableMapOf<ImageFilters.Filter, Bitmap>()
+                for ((filter, bmp) in results) {
+                    if (bmp != null) previews[filter] = bmp
                 }
                 
                 if (thumb !== src) {

@@ -96,21 +96,39 @@ data class PdfReaderUiState(
 class PdfReaderViewModel(
     private val appContext: Context,
     private val pdfPath: String,
-    private val repository: DocumentRepository? = null
+    private val repository: DocumentRepository? = null,
+    private val imagePagePaths: List<String>? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PdfReaderUiState())
     val uiState: StateFlow<PdfReaderUiState> = _uiState.asStateFlow()
 
+    // True when we're displaying pre-existing images (no PDF rendering needed)
+    private val isImageMode = !imagePagePaths.isNullOrEmpty()
+
     // Lazy page rendering: only render pages as they become visible
-    private val pageCache = LinkedHashMap<Int, String>(8, 0.75f, true)
+    private val pageCache = LinkedHashMap<Int, String>(10, 0.75f, true)
     private val renderMutex = Mutex()
     private val cacheDir by lazy {
         File(appContext.cacheDir, "pdf_reader_cache").also { if (!it.exists()) it.mkdirs() }
     }
 
     init {
-        loadPdf()
+        if (isImageMode) {
+            loadImagePages()
+        } else {
+            loadPdf()
+        }
+    }
+
+    /** Fast path: images already exist on disk, no rendering needed. */
+    private fun loadImagePages() {
+        val paths = imagePagePaths ?: return
+        _uiState.value = PdfReaderUiState(
+            isLoading = false,
+            pdfTitle = File(pdfPath).nameWithoutExtension,
+            pageCount = paths.size,
+        )
     }
 
     private fun loadPdf() {
@@ -151,28 +169,38 @@ class PdfReaderViewModel(
 
     /**
      * Get the image path for a page, rendering it lazily if not cached.
-     * Keeps a maximum of 6 pages in memory to prevent OOM.
+     * In image mode, returns the pre-existing image path directly (zero-cost).
+     * In PDF mode, renders the page to a high-quality cached JPEG.
      */
-    suspend fun getPageImagePath(pageIndex: Int): String? = withContext(Dispatchers.IO) {
-        renderMutex.withLock {
-            // Return from cache if available
-            pageCache[pageIndex]?.let { path ->
-                if (File(path).exists()) return@withContext path
-            }
+    suspend fun getPageImagePath(pageIndex: Int): String? {
+        // Image mode: instant — no rendering, no caching, no JPEG re-compression
+        if (isImageMode) {
+            val paths = imagePagePaths ?: return null
+            return paths.getOrNull(pageIndex)
+        }
 
-            // Evict old pages if cache is too large (keep max 6 pages)
-            while (pageCache.size >= 6) {
-                val oldest = pageCache.entries.first()
-                try { File(oldest.value).delete() } catch (_: Exception) {}
-                pageCache.remove(oldest.key)
-            }
+        // PDF mode: render on demand
+        return withContext(Dispatchers.IO) {
+            renderMutex.withLock {
+                // Return from cache if available
+                pageCache[pageIndex]?.let { path ->
+                    if (File(path).exists()) return@withContext path
+                }
 
-            // Render the page
-            val path = renderPage(pageIndex)
-            if (path != null) {
-                pageCache[pageIndex] = path
+                // Evict old pages if cache is too large (keep max 8 pages)
+                while (pageCache.size >= 8) {
+                    val oldest = pageCache.entries.first()
+                    try { File(oldest.value).delete() } catch (_: Exception) {}
+                    pageCache.remove(oldest.key)
+                }
+
+                // Render the page
+                val path = renderPage(pageIndex)
+                if (path != null) {
+                    pageCache[pageIndex] = path
+                }
+                path
             }
-            path
         }
     }
 
@@ -190,13 +218,13 @@ class PdfReaderViewModel(
 
             val page = renderer.openPage(pageIndex)
 
-            // Render at high resolution (e.g., 300 dpi) for crystal clear zoom
+            // Render at 300 DPI for crystal clear text, capped at 4000px max dimension
             val densityDpi = 300
             var targetWidth = (page.width * densityDpi / 72.0).toInt()
             var targetHeight = (page.height * densityDpi / 72.0).toInt()
             val maxDim = maxOf(targetWidth, targetHeight)
-            if (maxDim > 3500) {
-                val scale = 3500.0 / maxDim
+            if (maxDim > 4000) {
+                val scale = 4000.0 / maxDim
                 targetWidth = (targetWidth * scale).toInt()
                 targetHeight = (targetHeight * scale).toInt()
             }
@@ -207,9 +235,10 @@ class PdfReaderViewModel(
                 return null
             }
 
+            // Save at 95% quality for minimal artifacts on text
             val pageFile = File(cacheDir, "reader_p${pageIndex}.jpg")
             pageFile.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
             }
             bitmap.recycle()
             page.close()
@@ -275,7 +304,8 @@ class PdfReaderViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        viewModelScope.launch(Dispatchers.IO) {
+        // Use a standalone scope since viewModelScope is already cancelled
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             try {
                 if (cacheDir.exists()) cacheDir.deleteRecursively()
             } catch (_: Exception) {}

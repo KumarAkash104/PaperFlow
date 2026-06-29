@@ -29,6 +29,7 @@ data class CameraUiState(
     val flashEnabled: Boolean = false,
     val isCapturing: Boolean = false,
     val statusText: String = "Ready to scan",
+    val scanQuality: Int = 95,  // JPEG quality: 95=High, 75=Medium, 50=Low
 )
 
 class CameraViewModel(
@@ -64,6 +65,10 @@ class CameraViewModel(
 
     fun toggleFlash() {
         _uiState.value = _uiState.value.copy(flashEnabled = !_uiState.value.flashEnabled)
+    }
+
+    fun setScanQuality(quality: Int) {
+        _uiState.value = _uiState.value.copy(scanQuality = quality)
     }
 
     fun onCaptureStart() {
@@ -177,7 +182,7 @@ class CameraViewModel(
                             val bitmap = ImageProcessor.loadBitmap(file.absolutePath)
                             if (bitmap != null) {
                                 FileOutputStream(file).use { fos ->
-                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos)
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, _uiState.value.scanQuality, fos)
                                 }
                                 bitmap.recycle()
                             }
@@ -211,7 +216,7 @@ class CameraViewModel(
                             val bitmap = ImageProcessor.loadBitmap(file.absolutePath)
                             if (bitmap != null) {
                                 FileOutputStream(file).use { fos ->
-                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos)
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, _uiState.value.scanQuality, fos)
                                 }
                                 width = bitmap.width
                                 height = bitmap.height

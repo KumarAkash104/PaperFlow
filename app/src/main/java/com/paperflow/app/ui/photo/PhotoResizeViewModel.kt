@@ -54,8 +54,16 @@ class PhotoResizeViewModel(
                 BitmapFactory.decodeStream(stream, null, options)
                 stream?.close()
 
+                // Calculate sample size for OOM protection
+                var sampleSize = 1
+                val maxDim = 4000
+                while (options.outWidth / sampleSize > maxDim || options.outHeight / sampleSize > maxDim) {
+                    sampleSize *= 2
+                }
+
                 val stream2 = appContext.contentResolver.openInputStream(uri)
-                val bitmap = BitmapFactory.decodeStream(stream2)
+                val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+                val bitmap = BitmapFactory.decodeStream(stream2, null, decodeOpts)
                 stream2?.close()
 
                 if (bitmap == null) {

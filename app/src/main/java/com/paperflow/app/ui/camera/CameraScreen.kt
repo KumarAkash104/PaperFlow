@@ -41,11 +41,13 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Badge
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -228,6 +230,51 @@ fun CameraScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Quality selector (scan mode only)
+            if (viewModel.cameraMode == "scan") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.HighQuality,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    listOf("Low" to 50, "Med" to 75, "High" to 95).forEach { (label, quality) ->
+                        FilterChip(
+                            selected = uiState.scanQuality == quality,
+                            onClick = { viewModel.setScanQuality(quality) },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                )
+                            },
+                            modifier = Modifier
+                                .height(28.dp)
+                                .padding(horizontal = 2.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                selectedLabelColor = Color.White,
+                                labelColor = Color.White.copy(alpha = 0.6f),
+                                containerColor = Color.White.copy(alpha = 0.1f),
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                borderColor = Color.White.copy(alpha = 0.2f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                enabled = true,
+                                selected = uiState.scanQuality == quality,
+                            ),
+                        )
+                    }
+                }
+            }
             // Thumbnail strip
             AnimatedVisibility(
                 visible = uiState.capturedPages.isNotEmpty(),
@@ -427,3 +474,4 @@ private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
             ContextCompat.getMainExecutor(this),
         )
     }
+

@@ -1,0 +1,500 @@
+﻿05-23 12:29:25.250 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():421 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+05-23 12:29:25.250 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2844 Clear cache for languages: {ja-JP}, changed=false
+05-23 12:29:25.251 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onFailure():938 Fail load entries [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.251 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():755 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.261 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():885 update loading task with resetImplicitlyEnabledEntries is false
+05-23 12:29:25.264 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2833 resetLanguages(): languages={zh-CN, zh-HK}, conditionName=enable_chinese_9key_foldable_split
+05-23 12:29:25.264 32448 32448 I ImeDefCache: ImeDefCache.clearCacheForLanguages():430 clearCacheForLanguages: languagesToClear={zh-CN, zh-HK}, conditionName=enable_chinese_9key_foldable_split
+05-23 12:29:25.264 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():401 clearAdditionalImeDefsForCondition() clear tasks: []
+05-23 12:29:25.265 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():421 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+05-23 12:29:25.265 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2844 Clear cache for languages: {zh-CN, zh-HK}, changed=false
+05-23 12:29:25.265 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onFailure():938 Fail load entries [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.266 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():755 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.268 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():885 update loading task with resetImplicitlyEnabledEntries is false
+05-23 12:29:25.269 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2833 resetLanguages(): languages={ja-JP}, conditionName=undo
+05-23 12:29:25.269 32448 32448 I ImeDefCache: ImeDefCache.clearCacheForLanguages():430 clearCacheForLanguages: languagesToClear={ja-JP}, conditionName=undo
+05-23 12:29:25.271 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():401 clearAdditionalImeDefsForCondition() clear tasks: []
+05-23 12:29:25.271 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():421 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+05-23 12:29:25.272 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2844 Clear cache for languages: {ja-JP}, changed=false
+05-23 12:29:25.273 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onFailure():938 Fail load entries [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.273 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():755 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.291 32448 32511 I EmojiSuperpacksManager: EmojiSuperpacksManager.triggerSync():386 triggerSync(2) : isBundled=false, isUserInitiated=false
+05-23 12:29:25.292 32448 32511 I EmojiSuperpacksManager: EmojiSuperpacksManager.sync():471 Reusing register manifest for emoji
+05-23 12:29:25.294 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():885 update loading task with resetImplicitlyEnabledEntries is false
+05-23 12:29:25.295 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2833 resetLanguages(): languages={ko-KR}, conditionName=enable_voice_in_korean
+05-23 12:29:25.296 32448 32448 I ImeDefCache: ImeDefCache.clearCacheForLanguages():430 clearCacheForLanguages: languagesToClear={ko-KR}, conditionName=enable_voice_in_korean
+05-23 12:29:25.297 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():401 clearAdditionalImeDefsForCondition() clear tasks: []
+05-23 12:29:25.297 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():421 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+05-23 12:29:25.298 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2844 Clear cache for languages: {ko-KR}, changed=false
+05-23 12:29:25.299 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onFailure():938 Fail load entries [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.300 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():755 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.316 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():885 update loading task with resetImplicitlyEnabledEntries is false
+05-23 12:29:25.317 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2833 resetLanguages(): languages={zh-CN, zh-HK, zh-TW}, conditionName=enable_voice_in_chinese
+05-23 12:29:25.317 32448 32448 I ImeDefCache: ImeDefCache.clearCacheForLanguages():430 clearCacheForLanguages: languagesToClear={zh-CN, zh-HK, zh-TW}, conditionName=enable_voice_in_chinese
+05-23 12:29:25.318 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():401 clearAdditionalImeDefsForCondition() clear tasks: []
+05-23 12:29:25.318 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():421 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+05-23 12:29:25.318 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2844 Clear cache for languages: {zh-CN, zh-HK, zh-TW}, changed=false
+05-23 12:29:25.318 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onFailure():938 Fail load entries [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.318   685  2359 W ActivityManager: Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10220, TargetPkg: com.google.android.gms
+05-23 12:29:25.319 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():755 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.324 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():885 update loading task with resetImplicitlyEnabledEntries is false
+05-23 12:29:25.327 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2833 resetLanguages(): languages={ja-JP}, conditionName=ja_enable_popup_slideup_padding
+05-23 12:29:25.328 32448 32448 I ImeDefCache: ImeDefCache.clearCacheForLanguages():430 clearCacheForLanguages: languagesToClear={ja-JP}, conditionName=ja_enable_popup_slideup_padding
+05-23 12:29:25.328 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():401 clearAdditionalImeDefsForCondition() clear tasks: []
+05-23 12:29:25.328 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():421 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+05-23 12:29:25.328 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2844 Clear cache for languages: {ja-JP}, changed=false
+05-23 12:29:25.329 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onFailure():938 Fail load entries [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.331 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():755 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}]
+05-23 12:29:25.349 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():885 update loading task with resetImplicitlyEnabledEntries is false
+05-23 12:29:25.354 32448 32448 I PhenotypeModule: PhenotypeModule.onCreate():172 onCreate()
+05-23 12:29:25.356 32448 32448 I PhenotypeModule: PhenotypeModule.maybeFetchAndUpdate():276 maybeFetchAndUpdate: start new task to fetch
+05-23 12:29:25.399 32306 32421 E GmsCoreLogger: Missing account for FACET_USAGE_GAIA_UNSAMPLED [CONTEXT service_id=299 ]
+05-23 12:29:25.420 32306 32432 I MdiSyncModule: flag handling is skipping irrelevant intent.
+05-23 12:29:25.435 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.onCreate():638 
+05-23 12:29:25.451   685  1699 W ActivityManager: Slow operation: 113ms so far, now at finishAttachApplicationInner: after mServices.attachApplicationLocked
+05-23 12:29:25.454   685  1699 W ActivityManager: Slow operation: 116ms so far, now at finishAttachApplicationInner: after dispatching broadcasts
+05-23 12:29:25.465 32448 32448 D DesktopExperienceFlags: Toggle override initialized to: false
+05-23 12:29:25.467   841   852 I artd    : GetBestInfo: odex in dalvik-cache (/data/dalvik-cache/x86_64/apex@com.google.android.gmssystem@priv-app@PrebuiltGmsCoreVic@CP21.260330.005@PrebuiltGmsCoreVic.apk@classes.dex) is kOatUpToDate with filter 'verify' executable 'false'
+05-23 12:29:25.478 32448 32448 D CompatChangeReporter: Compat change id reported: 377864165; UID 10167; state: ENABLED
+05-23 12:29:25.483 32462 32462 W ActivityThread: getPackageInfo() called with an older ApplicationInfo than the cached version for package com.google.android.gms
+05-23 12:29:25.485   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000d/dl-Appsearch.optional_261136100800.apk has no usable artifacts
+05-23 12:29:25.501   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000008/dl-MlkitOcrCommon.optional_261136100800.apk has no usable artifacts
+05-23 12:29:25.518 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.onCreate():657 Maybe update OEM display config because of service creation
+05-23 12:29:25.521 32448 32448 I DeviceModeModule: DeviceModeModule.calculateAndNotify():225 Device mode 'phone' from display metrics 'DisplayMetrics{density=0.0, width=1080, height=2400, scaledDensity=0.0, xdpi=420.0, ydpi=420.0}' or smallestScreenWidthDp: 411
+05-23 12:29:25.522 32448 32448 I WindowMetricsNotification: WindowMetricsNotification.notify():159 rak[bounds=Rect(0, 132 - 1080, 2400), insets=Rect(0, 0 - 0, 0), densityDpi=420, smallestScreenWidthDp=411, displayWidth=1080, displayHeight=2400, xdpi=420.0, ydpi=420.0, isTrustable=true, displayId=0]; DisplayMetrics{density=2.625, width=1080, height=2400, scaledDensity=2.625, xdpi=420.0, ydpi=420.0}
+05-23 12:29:25.524 32448 32448 I WindowMetricsHelper: WindowMetricsHelper.predictAndNotify():145 Window metrics predicted.
+05-23 12:29:25.527 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():560 notifyCurrentInputMethodEntryOnContextChanged()
+05-23 12:29:25.528 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():565 The context is changed before initialized
+05-23 12:29:25.528 32448 32448 I KeyboardContextProvider: KeyboardContextProvider.setBaseContextAndInvalidKeyboardContextCache():88 setBaseContextAndInvalidKeyboardContextCache(): com.android.inputmethod.latin.LatinIME@53eb1d0
+05-23 12:29:25.531   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+05-23 12:29:25.537   685   717 W Looper  : Slow dispatch took 166ms android.ui app=system_server main=false group=TOP_APP h=com.android.server.am.ActivityManagerService$UiHandler c=com.android.server.am.UidObserverController$$ExternalSyntheticLambda0@26ff1a9 m=0
+05-23 12:29:25.537 32448 32448 I ContentCaptureHelper: Setting logging level to OFF
+05-23 12:29:25.543 32448 32448 E GoogleInputMethodService: GoogleInputMethodService.getAppEditorInfo():1937 App EditorInfo should never be null.
+05-23 12:29:25.554   841   852 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/3C458487C11623D174A33292B914D98AB3A4651D/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+05-23 12:29:25.556   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+05-23 12:29:25.561 32448 32448 I Gm3ColorTokenStyleSheetProvider: Gm3ColorTokenStyleSheetProvider.isHigherContrastMode():326 Detected higher contrast mode: 72.432045
+05-23 12:29:25.588 32448 32448 I KeyboardThemeProvider: KeyboardThemeProvider.applyKeyboardTheme():27 Apply keyboard theme: theme,!gsf,!pgsans,!pgsf,!use_system_font,BORDER,DYNAMIC_DARK_BRIGHT_KEY,FLAVOR_DPI=XXHDPI,IS_LIGHT,KEYBOARD_WIDTH_CATEGORY=NORMAL,KEY_BORDER_SHAPE=1,LIGHT_THEME=true,PHYSICAL_DIAGONAL=5.9809904,POPUP,SCREEN_SHORTEST_WIDTH=411,SCREEN_SHORTEST_WIDTH_NO_SCALE=411,SW400DP,XXHDPI,bottom4dp,bright_key_on_dynamic_color_dark_theme=true,enable_popup_on_keypress=true,keyboard_redesign_google_sans=true,non_linear_scale,noshadow,overlay_builtin_dynamic_color_light_base.binarypb:gm3-light-fffaf8fe-ff4c5e8b-4fb1adea13304a190d4abf12326cf60c,silkpopup
+05-23 12:29:25.597 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020518, callback=ctn@735bfa8, lastModifier=2, keyCodes=[47], actions=[0]}
+05-23 12:29:25.598 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=0, callback=ctn@682c266, lastModifier=0, keyCodes=[204], actions=[0]}
+05-23 12:29:25.608   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000f/dl-MlkitBarcodeUi.optional_261136100800.apk has no usable artifacts
+05-23 12:29:25.627   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-IdentityCredentialsPlatform.optional_261136100800.apk has no usable artifacts
+05-23 12:29:25.640   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+05-23 12:29:25.673 32448 32448 I AccessPointOrderHelper: AccessPointOrderHelper.updateCurrentDeviceMode():96 Disable foldable separate customization
+05-23 12:29:25.681 32448 32448 I PersonalizeTopBarHandler: PersonalizeTopBarHandler.loadPersonalizedAccessPoints():148 Load remained access points null
+05-23 12:29:25.723   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_260580502100800.apk has no usable artifacts
+05-23 12:29:25.733 32462 32462 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.gmscompliance.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+05-23 12:29:25.733 32462 32462 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.gmscompliance.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+05-23 12:29:25.734 32448 32448 I UniversalDictationExtension: UniversalDictationExtension.onCreateExtension():66 onCreate [UD]
+05-23 12:29:25.743   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000a/dl-VisionOcr.optional_261136100000.apk has no usable artifacts
+05-23 12:29:25.752 32448 32497 I InputActionMetricsProcessor: InputActionMetricsProcessor.onAttached():104 Attached to metrics manager.
+05-23 12:29:25.757   841   852 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+05-23 12:29:25.762 32462 32513 I GmsReceiverSupport: Registered Receiver for 15+1 IntentFilters
+05-23 12:29:25.783 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [lgr->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, nhf->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx] takes 179ms
+05-23 12:29:25.832 32306 32432 I GmsSyncPolicyEngine: (REDACTED) Periodic sync %d disabled by policy, cancelled.
+05-23 12:29:25.834 32306 32432 I GmsSyncPolicyEngine: (REDACTED) Periodic sync %d disabled by policy, cancelled.
+05-23 12:29:25.845 32306 32432 I GmsSyncPolicyEngine: (REDACTED) Periodic sync %d disabled by policy, cancelled.
+05-23 12:29:25.913 32306 32502 I SystemUpdate: [Installation,ReceiverIntentOperation] Received intent: Intent { act=com.google.gservices.intent.action.GSERVICES_CHANGED flg=0x1000010 xflg=0x4 pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.GmsIntentOperationService (has extras) }.
+05-23 12:29:25.920 32462 32474 I DynamiteModule: Considering local module com.google.android.gms.googlecertificates:7 and remote module com.google.android.gms.googlecertificates:0
+05-23 12:29:25.920 32462 32474 I DynamiteModule: Selected local version of com.google.android.gms.googlecertificates
+05-23 12:29:25.947   685  1077 I AdbWifiNetworkMonitor: Wi-Fi network available
+05-23 12:29:25.948   685  1077 I AdbWifiNetworkMonitor: Received the same Wi-Fi SSID. Ignoring.
+05-23 12:29:25.970   685  1048 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+05-23 12:29:25.999 32448 32505 I SuperpacksManagerImpl: SuperpacksManagerImpl.initializeInternal():529 Switched background task scheduler: false
+05-23 12:29:26.061 32448 32483 I FileRestoreModule: FileRestoreModule.maybePerformRestore():52 There is no restore app version, skip restore
+05-23 12:29:26.064 32448 32483 I UFCGuarder: UFCGuarder.onCreate():58 onCreate
+05-23 12:29:26.073 32448 32497 I KeyboardModeUtils: KeyboardModeUtils.getKeyboardBottomOffset():432 inch: 0.000000 ydpi: 420.000000 adjustKeyboardBottomByDisplaySize: false currentDensityDpi: 420 defaultDensityDpi: 420 keyboardBottomToScreenPx: 0 keyboardBottomToNavBarPx: 0 navBarHeight: 0
+05-23 12:29:26.125 32462 32513 I Watchcat: Started
+05-23 12:29:26.134   685  2200 W libbinder.Binder: Binder transaction to android.content.pm.IPackageManager, function: UNKNOWN_FUNCTION_NAME, code: 1598311760, took 1913ms. Data bytes: 80 Reply bytes: 4 Flags: 16
+05-23 12:29:26.216 32448 32512 I SpeechPackManager: SpeechPackManager.registerManifest():516 registerManifest() : Reusing hash 1327534105
+05-23 12:29:26.219 32448 32505 I SP      : Registering emoji.2026020320, url: https://www.gstatic.com/android/keyboard/modelpack/emoji/20250115185814/superpacks_manifest.zip, constraints: m:*:*:*, flags: *, requested: 2026020320, current: 2026020320
+05-23 12:29:26.244 32448 32497 I LauncherIconVisibilityModule: LauncherIconVisibilityModule.updateLauncherIconVisibility():76 updateLauncherIconVisibility() : Visible = false
+05-23 12:29:26.262 32462 32480 I ggtn    : (REDACTED) Shared storage file not found for %s
+05-23 12:29:26.262 32462 32480 I ggtn    : (REDACTED) Unable to retrieve flag snapshot for %s, using defaults.
+05-23 12:29:26.263 32448 32497 W LegacyClearcutAdapter: LegacyClearcutAdapter.run():42 Delegate not ready, dropping metric operation
+05-23 12:29:26.280 32448 32483 I PlayCore: UID: [10167]  PID: [32448] SplitInstallService : deferredInstall([tenoranimation_feature_split])
+05-23 12:29:26.305 32306 32502 D SharedPreferencesImpl: Time required to fsync /data/user/0/com.google.android.gms/shared_prefs/com.google.android.gms.update.storage.xml: [<1: 0, <2: 0, <4: 0, <8: 0, <16: 0, <32: 0, <64: 0, <128: 0, <256: 0, <512: 1, <1024: 0, <2048: 0, <4096: 0, <8192: 0, <16384: 0, >=16384: 0]
+05-23 12:29:26.314 32306 32433 W DynamiteModule: Local module descriptor class for com.google.android.gms.vision.dynamite.ocr not found.
+05-23 12:29:26.315 32306 32433 W ProviderHelper: Unknown dynamite feature vision.dynamite.ocr
+05-23 12:29:26.316 32306 32433 I DynamiteModule: Considering local module com.google.android.gms.vision.dynamite.ocr:0 and remote module com.google.android.gms.vision.dynamite.ocr:0
+05-23 12:29:26.317 32306 32532 I GmsDebugLogger: [89] vision.dynamite.ocr
+05-23 12:29:26.321 32306 32433 I DynamiteModule: Considering local module com.google.android.gms.vision.ocr:0 and remote module com.google.android.gms.vision.ocr:261136000
+05-23 12:29:26.321 32306 32433 I DynamiteModule: Selected remote version of com.google.android.gms.vision.ocr, version >= 261136000
+05-23 12:29:26.346 32306 32500 I MS_Utils: version of com.google.android.apps.maps = 1068505956
+05-23 12:29:26.349 32448 32512 I SpeechPackManager: SpeechPackManager$4.onSuccess():495 updatePackSetCacheAsync() : Updated the PackSet cache
+05-23 12:29:26.382 32448 32505 E EmojiSlicingStrategy: EmojiSlicingStrategy.getSlices():88 getSlices() : Received null or empty userEnabledLocales.
+05-23 12:29:26.383 32448 32505 I SP      : Syncing emoji (2026020320) with slices: [], metadata: false
+05-23 12:29:26.391 32448 32505 E EmojiSlicingStrategy: EmojiSlicingStrategy.getSlices():88 getSlices() : Received null or empty userEnabledLocales.
+05-23 12:29:26.400 32448 32505 I SP      : Syncing emoji (2026020320) with slices: [], metadata: false
+05-23 12:29:26.447 32448 32505 I SP      : GC for 'emoji' (10) with ttl of 0 ms took 32 ms (0/32/0)
+05-23 12:29:26.516 32306 32433 D DesktopExperienceFlags: Toggle override initialized to: false
+05-23 12:29:26.521 32448 32505 I AbstractSyncResultCallback: AbstractSyncResultCallback.onFailure():38 onFailure(): emoji.sync cancelled; expected if new request supersedes pending one.
+05-23 12:29:26.522 32448 32505 I SP      : Sync for emoji succeeded in 152 ms: no changes
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: EmojiSuperpacksManager.triggerSync():428 triggerSync(2) : canceled
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: java.util.concurrent.CancellationException: Task was cancelled.
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at uun.i(PG:33)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at uuv.r(PG:24)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at uun.get(PG:1)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at a.n(PG:2)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at uwm.run(PG:32)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at lqj.run(PG:49)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at java.lang.Thread.run(Thread.java:1572)
+05-23 12:29:26.539 32448 32512 W EmojiSuperpacksManager: 	at lpy.run(PG:8)
+05-23 12:29:26.549 32462 32462 D BoundBrokerSvc: onBind: Intent { act=android.intent.action.RESOLVE_INSTANT_APP_PACKAGE xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+05-23 12:29:26.549 32462 32462 D BoundBrokerSvc: Loading bound service for intent: Intent { act=android.intent.action.RESOLVE_INSTANT_APP_PACKAGE xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+05-23 12:29:26.596 32306 32502 I SystemUpdate: [UUC,UucEnabler] Disabled UucNotificationReceiverService proxy service
+05-23 12:29:26.605 32448 32505 I SP      : GC for 'emoji' (10) with ttl of 0 ms took 0 ms (0/0/0)
+05-23 12:29:26.608 32448 32498 I DynamiteModule: Considering local module com.google.android.gms.cronet_dynamite:0 and remote module com.google.android.gms.cronet_dynamite:4311
+05-23 12:29:26.608 32448 32498 I DynamiteModule: Selected remote version of com.google.android.gms.cronet_dynamite, version >= 4311
+05-23 12:29:26.619 32448 32448 I ModuleManager: ModuleManager$ModuleInitListener.maybeUnloadModuleOnUnavailable():1454 module pok is unavailable
+05-23 12:29:26.640 32448 32448 I DeviceModeModule: DeviceModeModule.calculateAndNotify():225 Device mode 'phone' from display metrics 'DisplayMetrics{density=0.0, width=1080, height=2400, scaledDensity=0.0, xdpi=420.0, ydpi=420.0}' or smallestScreenWidthDp: 411
+05-23 12:29:26.643 32462 32535 W TracingHelper: No RequestContext found in the trace or trace not available. [CONTEXT service_id=259 ratelimit_count=1410065408 ]
+05-23 12:29:26.648   685   824 D InputMethodManagerService: Initializing Handwriting Spy
+05-23 12:29:26.647   685   685 W InputMethodBindingController$BackgroundConnection: Binder session present but potentially unused for binding to ComponentInfo{com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME}
+05-23 12:29:26.678 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.setShouldResetInputView():2764 Reset input view at next onStartInput()
+05-23 12:29:26.679 32448 32448 I ModuleManager: ModuleManager$ModuleInitListener.maybeUnloadModuleOnUnavailable():1454 module iyf is unavailable
+05-23 12:29:26.683 32448 32448 I PhenotypeModule: PhenotypeModule$2.onDeviceModeChanged():214 onDeviceModeChanged(): phone
+05-23 12:29:26.685 32462 32513 I GMS_MM_Logger: (REDACTED) Start time: %s
+05-23 12:29:26.685 32462 32513 I GMS_MM_Logger: Started.
+05-23 12:29:26.707 32306 32514 I Icing   : Storage manager: low false usage 160.34KB avail 4.33GB capacity 5.80GB
+05-23 12:29:26.721   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:26.721   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:26.721 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in hul
+05-23 12:29:26.730 32462 32462 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.phenotype.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentApiService }
+05-23 12:29:26.731 32462 32462 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.phenotype.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentApiService }
+05-23 12:29:26.746 32462 32535 W TracingHelper: Mismatched RequestContext found for module INSTANTAPPS. Module id from RequestContext is MODULEID_UNKNOWN [CONTEXT service_id=259 ratelimit_count=1410065408 ]
+05-23 12:29:26.747 32448 32498 W putmethod.latin: Verification of void m2.cu.<clinit>() took 133.954ms (201.56 bytecodes/s) (0B arena alloc)
+05-23 12:29:26.801 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020517, callback=ctn@b474d42, lastModifier=2, keyCodes=[62], actions=[0]}
+05-23 12:29:26.824   685   725 W ActivityManager: Rescheduling restart of crashed service com.google.android.as/com.google.android.apps.miphone.aiai.captions.SystemCaptionsManagerService in 0ms for other
+05-23 12:29:26.824   685   725 W ActivityManager: Rescheduling restart of crashed service com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiPredictionService in 0ms for other
+05-23 12:29:26.824   685   725 W ActivityManager: Rescheduling restart of crashed service com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiContentCaptureService in 0ms for other
+05-23 12:29:26.824   685   725 W ActivityManager: Rescheduling restart of crashed service com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationAssistantService in 0ms for other
+05-23 12:29:26.826   685   725 W ActivityManager: Rescheduling restart of crashed service com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationListenerService in 0ms for other
+05-23 12:29:26.827 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132018840, callback=fdr@7518af2, lastModifier=2, keyCodes=[39], actions=[0]}
+05-23 12:29:26.828 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020511, callback=fdr@ddf1cf9, lastModifier=65536, keyCodes=[76], actions=[0]}
+05-23 12:29:26.829 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020510, callback=fdr@469643e, lastModifier=2, keyCodes=[37], actions=[0]}
+05-23 12:29:26.830 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020510, callback=fdr@49f7fec, lastModifier=2, keyCodes=[37], actions=[0]}
+05-23 12:29:26.830 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [kxi->oik, kxi->oik, kxi->oik, kxi->oik, kxi->oik, kxi->oik, kxi->oik, kxi->oik, kxi->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, oxv->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, oxv->oik, ody->odx, ody->odx, ody->odx, oxv->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, kxn->hik, kxn->hik, kxn->hik, kxn->hik, oxv->oik, ody->odx, ody->odx, ody->odx, oxv->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, kxn->hik, kxn->hik, kxn->hik, kxn->hik] takes 146ms
+05-23 12:29:26.832 32462 32462 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+05-23 12:29:26.832 32462 32462 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+05-23 12:29:26.849 32462 32462 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.usagereporting.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+05-23 12:29:26.850 32462 32462 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.usagereporting.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+05-23 12:29:26.949 32448 32477 D nativeloader: Load /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk!/lib/x86_64/libintegrated_shared_object.so using class loader ns product-clns-9 (caller=/product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk): ok
+05-23 12:29:26.956 32306 32500 I SystemUpdate: [Execution,InstallationEventIntentOperation] Handling event of type 2.
+05-23 12:29:26.994 32448 32519 D nativeloader: Load /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk!/lib/x86_64/libnative_crash_handler_jni.so using class loader ns product-clns-9 (caller=/product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk): ok
+05-23 12:29:26.997   472   472 D Zygote  : Forked child process 32550
+05-23 12:29:27.023   685   726 W ActivityManager: Slow operation: 192ms so far, now at startProcess: returned from zygote!
+05-23 12:29:27.024   685   726 W ActivityManager: Slow operation: 193ms so far, now at startProcess: done updating battery stats
+05-23 12:29:27.026 32550 32550 I libprocessgroup: Created cgroup /sys/fs/cgroup/apps/uid_10146/pid_32550
+05-23 12:29:27.041 32306 32432 I SystemUpdate: [Execution,InstallationIntentOperation] Received intent: Intent { act=com.google.android.gms.update.INSTALL_UPDATE cat=[targeted_intent_op_prefix:.update.execution.InstallationIntentOperation] xflg=0x4 cmp=com.google.android.gms/.chimera.GmsIntentOperationService (has extras) }.
+05-23 12:29:27.054   685   726 W ActivityManager: Slow operation: 223ms so far, now at startProcess: building log message
+05-23 12:29:27.054   685   726 I ActivityManager: Start proc 32550:com.google.android.as/u0a146 for bound-service {com.google.android.as/com.google.android.apps.miphone.aiai.captions.SystemCaptionsManagerService}
+05-23 12:29:27.054   685   726 W ActivityManager: Slow operation: 223ms so far, now at startProcess: starting to update pids map
+05-23 12:29:27.054   685   726 W ActivityManager: Slow operation: 223ms so far, now at startProcess: done updating pids map
+05-23 12:29:27.064 32306 32432 I SystemUpdate: [Execution,ExecutionManager] Start action execution: finished-execution
+05-23 12:29:27.064 32306 32432 I SystemUpdate: [Execution,ExecutionManager] Action finished-execution executed for 0.01 seconds.
+05-23 12:29:27.068 32462 32462 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.clearcut.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+05-23 12:29:27.068 32462 32462 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.clearcut.service.START dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentDirectBootAwareApiService }
+05-23 12:29:27.076 32448 32477 I NativeLibHelper: NativeLibHelper.loadLibrary():209 Loaded native library:integrated_shared_object (result=true)
+05-23 12:29:27.092 32306 32514 D nativeloader: Load /apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreVic@CP21.260330.005/PrebuiltGmsCoreVic.apk!/lib/x86_64/libAppDataSearch.so using class loader ns clns-9 (caller=/apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreVic@CP21.260330.005/PrebuiltGmsCoreVic.apk): ok
+05-23 12:29:27.102 32448 32498 W putmethod.latin: Verification of java.lang.Object m2.cv.createFromParcel(android.os.Parcel) took 343.315ms (361.18 bytecodes/s) (0B arena alloc)
+05-23 12:29:27.104 32306 32514 W native  : W0000 00:00:1779519567.104550   32514 model-utils.cc:17] No CRC32, most likely an old model; skip CRC32 check
+05-23 12:29:27.109 32306 32514 I native  : I0000 00:00:1779519567.108989   32514 permission-checker.cc:82] Creating PermissionChecker based on ACL with config_version 1 having 9 permissions defined.
+05-23 12:29:27.113 32306 32514 W native  : W0000 00:00:1779519567.113700   32514 words-map.cc:34] INVALID_ARGUMENT: Empty URI
+05-23 12:29:27.117 32306 32514 W native  : W0000 00:00:1779519567.117425   32514 words-map.cc:38] WordsMap was not properly initialized
+05-23 12:29:27.149 32550 32550 I Zygote  : Process 32550 created for com.google.android.as
+05-23 12:29:27.162 32550 32550 I ogle.android.as: Using generational CollectorTypeCMC GC.
+05-23 12:29:27.164 32550 32550 W ogle.android.as: Unexpected CPU variant for x86: x86_64.
+05-23 12:29:27.164 32550 32550 W ogle.android.as: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, alderlake, pantherlake, default
+05-23 12:29:27.183 32550 32550 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+05-23 12:29:27.189 32448 32529 I PlayCore: UID: [10167]  PID: [32448] SplitInstallService : Initiate binding to the service.
+05-23 12:29:27.295 32550 32550 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+05-23 12:29:27.295 32550 32550 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+05-23 12:29:27.296   472   472 D Zygote  : Forked child process 32564
+05-23 12:29:27.301   685   726 W ActivityManager: Slow operation: 53ms so far, now at startProcess: done updating battery stats
+05-23 12:29:27.301   685   726 W ActivityManager: Slow operation: 53ms so far, now at startProcess: building log message
+05-23 12:29:27.301   685   726 I ActivityManager: Start proc 32564:com.android.vending/u0a153 for bound-service {com.android.vending/com.google.android.finsky.splitinstallservice.SplitInstallService}
+05-23 12:29:27.301   685   726 W ActivityManager: Slow operation: 53ms so far, now at startProcess: starting to update pids map
+05-23 12:29:27.302   685   726 W ActivityManager: Slow operation: 54ms so far, now at startProcess: done updating pids map
+05-23 12:29:27.327 32564 32564 I libprocessgroup: Created cgroup /sys/fs/cgroup/apps/uid_10153/pid_32564
+05-23 12:29:27.355 32564 32564 I Zygote  : Process 32564 created for com.android.vending
+05-23 12:29:27.355 32564 32564 I android.vending: Using generational CollectorTypeCMC GC.
+05-23 12:29:27.357 32564 32564 W android.vending: Unexpected CPU variant for x86: x86_64.
+05-23 12:29:27.357 32564 32564 W android.vending: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, alderlake, pantherlake, default
+05-23 12:29:27.368 32448 32484 I DeviceStatusMonitor: DeviceStatusMonitor.handleBroadcast():138 onReceive() : Action = android.net.conn.CONNECTIVITY_CHANGE
+05-23 12:29:27.368 32564 32564 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+05-23 12:29:27.378 32550 32550 D nativeloader: InitLlndkLibrariesProduct: libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libapexsupport.so:libavf.so:libbinder_ndk.so:libc.so:libcamera_metadata.so:libcgrouprc.so:libclang_rt.asan-x86_64-android.so:libcom.android.tethering.connectivity_native.so:libdl.so:libft2.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libneuralnetworks.so:libnpumanager.so:libselinux.so:libsync.so:libvendorsupport.so:libvndksupport.so:libvulkan.so:libwrapfd.so
+05-23 12:29:27.379 32550 32550 D nativeloader: Configuring product-clns-9 for unbundled product apk /product/priv-app/DevicePersonalizationAiAiPrebuiltPixel2021/DevicePersonalizationAiAiPrebuiltPixel2021.apk. target_sdk_version=36, uses_libraries=, library_path=/product/priv-app/DevicePersonalizationAiAiPrebuiltPixel2021/lib/x86_64:/product/priv-app/DevicePersonalizationAiAiPrebuiltPixel2021/DevicePersonalizationAiAiPrebuiltPixel2021.apk!/lib/x86_64:/product/lib64:/system/product/lib64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.as:/product/lib64:/system/product/lib64
+05-23 12:29:27.380 32550 32550 D nativeloader: InitVndkspLibrariesProduct: VNDK is deprecated with product
+05-23 12:29:27.390 32448 32483 I PlayCore: UID: [10167]  PID: [32448] SplitInstallService : deferredInstall([brella_feature_split])
+05-23 12:29:27.400 32448 32484 I DeviceStatusMonitor: DeviceStatusMonitor.notifyIfNetworkChanged():200 notifyIfNetworkChanged: newState = NON_METERED, airplaneModeOn = false, notifyAnyway = false
+05-23 12:29:27.403 32448 32483 I LatinApp: LatinApp.getWorkManagerConfiguration():138 Customized configuration for Hilt WorkManager
+05-23 12:29:27.415 32550 32550 V GraphicsEnvironment: Currently set values for:
+05-23 12:29:27.415 32550 32550 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+05-23 12:29:27.415 32550 32550 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+05-23 12:29:27.415 32550 32550 V GraphicsEnvironment: com.google.android.as is not listed in per-application setting
+05-23 12:29:27.415 32550 32550 V GraphicsEnvironment: No special selections for ANGLE, returning default driver choice
+05-23 12:29:27.419 32448 32497 I NebulaeTrainingCacheMetricsProcessor: NebulaeTrainingCacheMetricsProcessor.maybeRegisterConversationIdNotificationListener():243 conversation id notification listener not enabled.
+05-23 12:29:27.424 32462 32535 D nativeloader: Load /apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreVic@CP21.260330.005/PrebuiltGmsCoreVic.apk!/lib/x86_64/libleveldbjni.so using class loader ns clns-9 (caller=/apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreVic@CP21.260330.005/PrebuiltGmsCoreVic.apk): ok
+05-23 12:29:27.424 32306 32514 I DynamiteModule: Considering local module com.google.android.gms.googlecertificates:7 and remote module com.google.android.gms.googlecertificates:0
+05-23 12:29:27.424 32306 32514 I DynamiteModule: Selected local version of com.google.android.gms.googlecertificates
+05-23 12:29:27.429 32550 32550 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+05-23 12:29:27.460 32448 32529 I PlayCore: UID: [10167]  PID: [32448] SplitInstallService : Already connected to the service.
+05-23 12:29:27.465 32564 32564 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/org.apache.http.legacy.jar
+05-23 12:29:27.465 32564 32564 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+05-23 12:29:27.465 32564 32564 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+05-23 12:29:27.465 32306 32514 I Icing   : updateResources: need to parse cfmu{com.google.android.gms}
+05-23 12:29:27.501 32448 32529 I PlayCore: UID: [10167]  PID: [32448] SplitInstallService : Waiting to bind to the service.
+05-23 12:29:27.513   685   717 W Looper  : Slow dispatch took 107ms android.ui app=system_server main=false group=TOP_APP h=com.android.server.am.ActivityManagerService$UiHandler c=com.android.server.am.UidObserverController$$ExternalSyntheticLambda0@26ff1a9 m=0
+05-23 12:29:27.516 32448 32448 I GoogleInputMethodService: GoogleInputMethodService$GoogleInputMethodImpl.attachToken():2806 
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.523938   32477 scoped-profiler.cc:90] signal_log: Initialized signal 42
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544601   32477 scoped-profiler.cc:90] signal_log: Initialized signal 43
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544683   32477 scoped-profiler.cc:90] signal_log: Initialized signal 44
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544749   32477 scoped-profiler.cc:90] signal_log: Initialized signal 45
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544778   32477 scoped-profiler.cc:90] signal_log: Initialized signal 46
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544836   32477 scoped-profiler.cc:90] signal_log: Initialized signal 47
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544873   32477 scoped-profiler.cc:90] signal_log: Initialized signal 48
+05-23 12:29:27.544 32448 32477 I native  : I0000 00:00:1779519567.544945   32477 scoped-profiler.cc:90] signal_log: Initialized signal 49
+05-23 12:29:27.576 32448 32498 W putmethod.latin: Verification of java.lang.Object m2.dm.writeReplace() took 471.762ms (21.20 bytecodes/s) (0B arena alloc)
+05-23 12:29:27.688 32448 32476 I ShortcutsDataManager: ShortcutsDataManager.onContentChanged():72 onContentChanged()
+05-23 12:29:27.697 32306 32310 W gle.android.gms: Suspending all threads took: 21.897ms
+05-23 12:29:27.700 32448 32477 I OnDevicePackDownloadModule: OnDevicePackDownloadModule.onCreate():67 onCreate()
+05-23 12:29:27.713 32448 32448 I DisplayManager: Implicitly registering for refresh rate
+05-23 12:29:27.715 32448 32448 W HWUI    : Unknown dataspace 0
+05-23 12:29:27.720 32448 32476 I ContactsDataManager: ContactsDataManager.onContentChanged():153 onContentChanged()
+05-23 12:29:27.721 32448 32476 I EmailDataManager: EmailDataManager.onContentChanged():101 onContentChanged()
+05-23 12:29:27.730 32448 32477 I OnDevicePackDownloadModule: OnDevicePackDownloadModule.onDestroy():103 onDestroy()
+05-23 12:29:27.752   685  2359 I ImeTracker: system_server:b6a5c9f0: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false displayId 0
+05-23 12:29:27.753   685  2359 W InputChannel-JNI: Channel already disposed.
+05-23 12:29:27.765   685   719 I ImeTracker: system_server:b6a5c9f0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+05-23 12:29:27.776   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:27.776   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:27.814 32448 32448 I PkDeviceHelper: PkDeviceHelper.refreshDevices():87 refreshing devices
+05-23 12:29:27.814 32448 32448 I PkDeviceHelper: PkDeviceHelper.addDevice():125 device qwerty2 added
+05-23 12:29:27.814 32448 32448 I PkDeviceHelper: PkDeviceHelper.addDevice():125 device AT Translated Set 2 keyboard added
+05-23 12:29:27.826   685   783 W InputChannel-JNI: Channel already disposed.
+05-23 12:29:27.836 32448 32448 I MetricsProcessorProviderManager: MetricsProcessorProviderManager.onClearcutAdapterReady():117 onClearcutAdapterReady
+05-23 12:29:27.875 32448 32448 I MetricsProcessorProviderManager: MetricsProcessorProviderManager.notifyBackendReady():200 MetricsManager backend is ready.
+05-23 12:29:27.875 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [odo->oct] takes 39ms
+05-23 12:29:27.877 32448 32448 I MetricsManager: MetricsManager.maybeStopCaching():472 Stop caching metrics.
+05-23 12:29:27.878 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [ncb->hsb, ncb->hsb, ncb->ivp, obn->ocs, obn->ocn, obx->oik] takes 47ms
+05-23 12:29:27.882   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:27.882   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:27.932 32448 32505 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: 2022081613
+05-23 12:29:27.937 32550 32550 I AiAi    : chip type: STANDARD, hardware: ranchu, revision: , sdk: 37
+05-23 12:29:27.952 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [oyd->oik, oyd->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx] takes 64ms
+05-23 12:29:27.989 32448 32505 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: 2022081613
+05-23 12:29:28.020   685   724 W ActivityManager: pid 685 system sent binder code 2 with flags 1 and got error -32
+05-23 12:29:28.020   685   724 D ActivityManager: Too many transaction errors, throttling transaction error callback.
+05-23 12:29:28.096 32448 32582 W libc    : Access denied finding property "vendor.mesa.virtgpu.kumquat"
+05-23 12:29:28.116   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:28.116   536   574 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+05-23 12:29:28.122 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1434 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+05-23 12:29:28.124 32448 32448 W AndroidIME: LatinIMEBase.updateInputViewCoverNavigation():317 Null input view, cannot update padding!
+05-23 12:29:28.134 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=0, callback=ctn@90d89ca, lastModifier=0, keyCodes=[57, 57], actions=[1, 0]}
+05-23 12:29:28.134 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=0, callback=ctn@6fb673b, lastModifier=0, keyCodes=[58, 58], actions=[1, 0]}
+05-23 12:29:28.137 32448 32448 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 1, locked = false
+05-23 12:29:28.139 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1463 Reset input view per cached request.
+05-23 12:29:28.139 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.clearInputMethodServiceData():1113 clearInputMethodServiceData for resetInputView
+05-23 12:29:28.144 32448 32495 I JapaneseMozcExtension: JapaneseMozcExtension.onCreate():44 
+05-23 12:29:28.150 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.discardAllKeyboardViewAndInputView():1349 discardAllKeyboardViewAndInputView()
+05-23 12:29:28.151 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():536 Destroy existing keyboard group manager in hul
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: AbstractOpenableExtension$1.onFailure():144 failed to parse keyboard group def : 2132213994 -> 0_resource_name_obfuscated. 
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: java.util.concurrent.CancellationException: Task was cancelled.
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.i(PG:33)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uuv.r(PG:24)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.get(PG:1)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at a.n(PG:2)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uwm.run(PG:32)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uvu.execute(PG:1)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.g(PG:1)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.l(PG:101)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.cancel(PG:52)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.n(PG:17)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uuz.c(PG:3)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.l(PG:30)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at uun.cancel(PG:52)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at fvs.e(PG:64)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at fvs.N(PG:4)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at fvs.O(PG:1)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at miu.h(PG:33)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at nfl.ai(PG:20)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at ecd.k(PG:34)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at nfl.am(PG:14)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at nfl.onStartInput(PG:305)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.inputmethodservice.InputMethodService.doStartInput(InputMethodService.java:3403)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.inputmethodservice.InputMethodService$InputMethodImpl.startInput(InputMethodService.java:821)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.inputmethodservice.InputMethodService$InputMethodImpl.dispatchStartInput(InputMethodService.java:852)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.inputmethodservice.IInputMethodWrapper.executeMessage(IInputMethodWrapper.java:200)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at com.android.internal.os.HandlerCaller$MyHandler.handleMessage(HandlerCaller.java:44)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.os.Handler.dispatchMessage(Handler.java:125)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.os.Looper.loopOnce(Looper.java:296)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.os.Looper.loop(Looper.java:397)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at android.app.ActivityThread.main(ActivityThread.java:9523)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at java.lang.reflect.Method.invoke(Native Method)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+05-23 12:29:28.164 32448 32448 E AbstractOpenableExtension: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+05-23 12:29:28.165 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension$3.onFailure():564 Failed to load KeyboardGroupManager in hul.
+05-23 12:29:28.165 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in hul
+05-23 12:29:28.165 32448 32495 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213760 -> 0_resource_name_obfuscated : WaitTime = 2467 ms : RunTime = 13 ms
+05-23 12:29:28.166 32448 32495 I NewS3RecognizerModule: NewS3RecognizerModule.onCreate():21 onCreate [news3]
+05-23 12:29:28.167 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.initializeInputMethodServiceData():879 initializeInputMethodServiceData for null
+05-23 12:29:28.168 32448 32448 I Gm3ColorTokenStyleSheetProvider: Gm3ColorTokenStyleSheetProvider.isHigherContrastMode():326 Detected higher contrast mode: 72.432045
+05-23 12:29:28.177 32448 32495 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213995 -> 0_resource_name_obfuscated : WaitTime = 1437 ms : RunTime = 9 ms
+05-23 12:29:28.179 32448 32495 I NetworkInfoNotification: NetworkInfoNotification$Listener.onReceive():107 onNetworkAvailable: networkState = NON_METERED, isAirplaneModeOn = false
+05-23 12:29:28.181 32564 32564 W android.vending: Failed to find entry 'classes.dex': Entry not found
+05-23 12:29:28.182 32564 32564 W android.vending: Failed to find entry 'classes.dex': Entry not found
+05-23 12:29:28.183 32564 32564 W android.vending: Failed to find entry 'classes.dex': Entry not found
+05-23 12:29:28.183 32564 32564 W android.vending: Failed to find entry 'classes.dex': Entry not found
+05-23 12:29:28.185 32448 32448 I KeyboardThemeProvider: KeyboardThemeProvider.applyKeyboardTheme():27 Apply keyboard theme: theme,!gsf,!pgsans,!pgsf,!use_system_font,BORDER,DYNAMIC_DARK_BRIGHT_KEY,FLAVOR_DPI=XXHDPI,IS_LIGHT,KEYBOARD_WIDTH_CATEGORY=NORMAL,KEY_BORDER_SHAPE=1,LIGHT_THEME=true,PHYSICAL_DIAGONAL=5.9809904,POPUP,SCREEN_SHORTEST_WIDTH=411,SCREEN_SHORTEST_WIDTH_NO_SCALE=411,SW400DP,XXHDPI,bottom4dp,bright_key_on_dynamic_color_dark_theme=true,enable_popup_on_keypress=true,keyboard_redesign_google_sans=true,non_linear_scale,noshadow,overlay_builtin_dynamic_color_light_base.binarypb:gm3-light-fffaf8fe-ff4c5e8b-4fb1adea13304a190d4abf12326cf60c,silkpopup
+05-23 12:29:28.186 32448 32448 I AndroidIME: InputBundleManager.loadActiveInputBundleId():531 loadActiveInputBundleId: , null
+05-23 12:29:28.187 32448 32448 I ShortcutsDataManager: AbstractContentDataManager.startImportContentTask():241 startImportContentTask()
+05-23 12:29:28.204 32564 32564 W android.vending: Failed to find entry 'classes.dex': Entry not found
+05-23 12:29:28.205 32564 32564 W android.vending: Failed to find entry 'classes.dex': Entry not found
+05-23 12:29:28.206 32564 32564 D nativeloader: Configuring clns-9 for other apk /data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/base.apk:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/split_config.en.apk:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/split_config.x86_64.apk:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/split_phonesky_data_loader.apk:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/split_phonesky_data_loader.config.x86_64.apk:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/split_phonesky_webrtc_native_lib.apk:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/split_phonesky_webrtc_native_lib.config.x86_64.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.vending-wkmUYmk27s7hwhtUvlMT0g==/lib/x86_64:/data/app/~~jk0PhcKsz4EqvpTlYOOh0Q==/com.android.ven
+05-23 12:29:28.226 32448 32476 I HandwritingOfflineSuperpacks: HandwritingOfflineSuperpacks.syncInternal():80 no bundled lm for handwriting.
+05-23 12:29:28.227 32448 32476 I HandwritingOfflineSuperpacks: HandwritingOfflineSuperpacks.syncInternal():80 no bundled lm for handwriting.
+05-23 12:29:28.232 32448 32584 I ShortcutsDataManager: AbstractContentDataManager$ImportContentTask.doInBackground():257 doInBackground()
+05-23 12:29:28.233 32448 32584 I PersonalDictionaryDataHandler: PersonalDictionaryDataHandler.beginProcess():114 LanguageTags = []
+05-23 12:29:28.241 32462 32480 I ggtn    : (REDACTED) Shared storage file not found for %s
+05-23 12:29:28.241 32462 32480 I ggtn    : (REDACTED) Unable to retrieve flag snapshot for %s, using defaults.
+05-23 12:29:28.257   685   725 I ActivityManager: Test idle failed due to c6708ac 32462:com.google.android.gms.persistent/u0a220 runnable at -2s439ms because NORMAL
+05-23 12:29:28.269   685  1469 W ActivityManager: Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10220, TargetPkg: com.google.android.gms
+05-23 12:29:28.301 32448 32495 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213994 -> 0_resource_name_obfuscated : WaitTime = 62 ms : RunTime = 74 ms
+05-23 12:29:28.304 32564 32564 V GraphicsEnvironment: Currently set values for:
+05-23 12:29:28.304 32564 32564 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+05-23 12:29:28.304 32564 32564 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+05-23 12:29:28.304 32564 32564 V GraphicsEnvironment: com.android.vending is not listed in per-application setting
+05-23 12:29:28.304 32564 32564 V GraphicsEnvironment: No special selections for ANGLE, returning default driver choice
+05-23 12:29:28.309 32564 32564 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+05-23 12:29:28.338 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$4.onSuccess():907 Success load entries: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}, LanguageTagVariantTuple{languageTag=zz, variant=qwerty}], resetImplicitlyEnabledEntries=false, initialized=false
+05-23 12:29:28.339 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.changeEnabledInputMethodEntries():1771 Change enabled input method entries, useSystemLanguage=true, old=, new=en-US:qwerty
+05-23 12:29:28.349 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.changeCurrentInputMethodEntry():3056 Set current input method entry: source=UNSPECIFIED, entryChanged=true, enablePersist=true, ndc{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_android_software_xr_api_spatial=false_app_first_start_timestamp=1779518757203_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_scrub_move=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_free_cursor=false_free_cursor_spacebar_popup=false_keyboard_font_size_setting=_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pk_simulator_vk_ready=false_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+05-23 12:29:28.350 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.loadAdditionalImeDefsForCurrentEntry():3085 loadAdditionalImeDefsForCurrentEntry(): ndc{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_android_software_xr_api_spatial=false_app_first_start_timestamp=1779518757203_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_scrub_move=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_free_cursor=false_free_cursor_spacebar_popup=false_keyboard_font_size_setting=_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pk_simulator_vk_ready=false_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+05-23 12:29:28.350 32448 32448 W InputMethodEntryManager: InputMethodEntryManager.getEnabledMultilingualSecondaryLanguages():2335 getEnabledMultilingualSecondaryLanguages is called before initialized
+05-23 12:29:28.353 32448 32448 I AdditionalImeDefCache: AdditionalImeDefCache.loadAdditionalImeDefsForEntryWithoutCache():239 Start loading additional ime defs for entry: ndc{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_android_software_xr_api_spatial=false_app_first_start_timestamp=1779518757203_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_scrub_move=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_free_cursor=false_free_cursor_spacebar_popup=false_keyboard_font_size_setting=_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pk_simulator_vk_ready=false_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+05-23 12:29:28.400 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [ndu->oik, ndu->oik, ndu->oik, ndu->oik, ndu->oik, ndu->oik, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx, ody->odx] takes 47ms
+05-23 12:29:28.402 32448 32448 I HandwritingOfflineSuperpacks: HandwritingOfflineSuperpacks.syncInternal():80 no bundled lm for handwriting.
+05-23 12:29:28.403 32448 32448 I HandwritingSuperpacks: HandwritingSuperpacks.register():265 register(): version '94', url 'https://dl.google.com/handwriting/models/handwriting_release.superpack_manifest.20260206.json' [ONLINE]
+05-23 12:29:28.410   685   783 V GrammaticalInflectionUtils: AttributionSource: android.content.AttributionSource@42b6dbc4 does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+05-23 12:29:28.410   685   783 W ActivityManager: Slow operation: 85ms so far, now at startProcess: done creating new process record
+05-23 12:29:28.411   685   783 W ActivityManager: Slow operation: 85ms so far, now at startProcess: stepping in to startProcess
+05-23 12:29:28.412   685  1469 W PackageConfigPersister: App-specific configuration not found for packageName: com.google.android.apps.nexuslauncher and userId: 0
+05-23 12:29:28.412   685   783 W ActivityManager: Slow operation: 87ms so far, now at startProcess: done starting proc!
+05-23 12:29:28.412   685   783 W ContentProviderHelper: Slow operation: 91ms so far, now at getContentProviderImpl: after start process
+05-23 12:29:28.413   685   783 W ContentProviderHelper: Slow operation: 92ms so far, now at getContentProviderImpl: updating data structures
+05-23 12:29:28.413   685   783 W ContentProviderHelper: Slow operation: 92ms so far, now at getContentProviderImpl: done!
+05-23 12:29:28.421 32462 32462 I MagicTether: [TetherService] onBind [CONTEXT service_id=276 ]
+05-23 12:29:28.449  1147  1147 I SharedConnectivityManager: onServiceConnected
+05-23 12:29:28.449 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$6.onSuccess():3106 Success load additional ImeDefs, entryChanged=true, additionalImeDefsChanged=true, [nxy{stringId=password, language=und-Latn-x-password, languageTag=und-Latn-x-password, processedConditions={writing_helper_enable_by_word_revert=false, variant=qwerty, true=true, language=en-US, enable_number_row=true, device=phone, enable_number_row_in_password=true, enable_pk_simulator=false}, className=com.google.android.libraries.inputmethod.ime.password.PasswordIme, label=2132019337, keyEventInterpreter=null, inlineComposing=true, autoCapital=true, announceAutoSelectedCandidate=true, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@473cd78, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=number, language=und-Latn-x-number, languageTag=und-Latn-x-number, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019274, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@b93c51, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=number_password, language=und-Latn-x-number-password, languageTag=und-Latn-x-number-password, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019275, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@6e58cb6, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=phone_number, language=und-Latn-x-phone-number, languageTag=und-Latn-x-phone-number, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019371, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@b608db7, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=date_time, language=und-Latn-x-date-time, languageTag=und-Latn-x-date-time, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132017755, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@5d44924, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}]
+05-23 12:29:28.451 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.onSuccessLoadingAdditionalImeDefs():3180 Additional ImeDefs have been loaded, maybe notify entry change: true
+05-23 12:29:28.454 32448 32483 I DelightKLPDownloader: DelightKLPDownloader.downloadKLPInternal():203 downloading KLP for en_840
+05-23 12:29:28.462   472   472 D Zygote  : Forked child process 32593
+05-23 12:29:28.462   685   726 W ActivityManager: Slow operation: 51ms so far, now at startProcess: returned from zygote!
+05-23 12:29:28.463   685   726 W ActivityManager: Slow operation: 52ms so far, now at startProcess: done updating battery stats
+05-23 12:29:28.463   685   726 W ActivityManager: Slow operation: 52ms so far, now at startProcess: building log message
+05-23 12:29:28.463   685   726 I ActivityManager: Start proc 32593:android.process.acore/u0a102 for content provider {com.android.providers.userdictionary/com.android.providers.userdictionary.UserDictionaryProvider}
+05-23 12:29:28.463   685   726 W ActivityManager: Slow operation: 52ms so far, now at startProcess: starting to update pids map
+05-23 12:29:28.463   685   726 W ActivityManager: Slow operation: 52ms so far, now at startProcess: done updating pids map
+05-23 12:29:28.474 32564 32564 I Finsky  : [2] Process created at version: 51.4.20-31 [0] [PR] 912836231
+05-23 12:29:28.474 32593 32593 I libprocessgroup: Created cgroup /sys/fs/cgroup/apps/uid_10102/pid_32593
+05-23 12:29:28.534 32593 32593 I Zygote  : Process 32593 created for android.process.acore
+05-23 12:29:28.536 32593 32593 I d.process.acore: Using generational CollectorTypeCMC GC.
+05-23 12:29:28.537 32593 32593 W d.process.acore: Unexpected CPU variant for x86: x86_64.
+05-23 12:29:28.537 32593 32593 W d.process.acore: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, alderlake, pantherlake, default
+05-23 12:29:28.545 32306 32310 W gle.android.gms: Suspending all threads took: 33.879ms
+05-23 12:29:28.546 32448 32497 W ModuleManager: ModuleManager.loadModule():634 Module pte is not available
+05-23 12:29:28.558 32448 32483 I SystemSubtypesReportModule: SystemSubtypesReportModule.onCreate():69 
+05-23 12:29:28.565 32448 32483 I DelightKLPDownloader: DelightKLPDownloader.getBundledLmVersion():312 bundled KLP for en_840 version = 0
+05-23 12:29:28.568 32462 32590 I MagicTether: [TetherService] starting runnable [CONTEXT service_id=276 ]
+05-23 12:29:28.572 32448 32448 I ClipboardDataHandler: ClipboardDataHandler.updateScreenshotsContentObserver():328 Disable the feature of handling screenshots in the clipboard.
+05-23 12:29:28.572 32448 32448 W NotificationCenter: NotificationCenter.unregisterListener():480 Listener emu@8f11f20 was not registered for notification class odo
+05-23 12:29:28.584 32448 32483 I ManifestedDataDownloader: ManifestedDataDownloader.download():67 downloading manifest https://www.gstatic.com/android/keyboard/dictionarypack/2026032418/metadata.json-perlang/en-840.json?v=2026050600
+05-23 12:29:28.590 32448 32448 I KeyboardContextProvider: KeyboardContextProvider$KeyboardContextCache.createKeyboardContext():173 createKeyboardContext(): en-US, lxt@a40aa5a(com.android.inputmethod.latin.LatinIME@53eb1d0), {1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h914dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.43 fontWeightAdjustment=0}
+05-23 12:29:28.595 32448 32498 W putmethod.latin: Verification of java.lang.ClassLoader m2.ak.a() took 195.281ms (250.92 bytecodes/s) (0B arena alloc)
+05-23 12:29:28.603 32448 32448 I SystemSubtypesReportModule: SystemSubtypesReportModule$1.onBindService():109 
+05-23 12:29:28.605 32448 32448 I SystemSubtypesReportModule: SystemSubtypesReportModule$1.onBindService():115 Start listening current entry
+05-23 12:29:28.608 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020507, callback=fdr@8416414, lastModifier=2, keyCodes=[50], actions=[0]}
+05-23 12:29:28.608 32448 32448 I HardKeyTracker: HardKeyTracker.registerKeySequence():187 Register key sequence owi{labelResId=2132020512, callback=fdr@bcde4bd, lastModifier=2, keyCodes=[48], actions=[0]}
+05-23 12:29:28.609 32448 32448 I SystemSubtypesReportModule: SystemSubtypesReportModule$3.onSetCurrentInputMethodSubtype():196 en_US
+05-23 12:29:28.609 32448 32448 I SystemSubtypesReportModule: SystemSubtypesReportModule$3.onSetCurrentInputMethodSubtype():217 switchEntry(en-US)
+05-23 12:29:28.610 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.changeCurrentInputMethodEntry():3056 Set current input method entry: source=SUBTYPE, entryChanged=true, enablePersist=true, ndc{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_android_software_xr_api_spatial=false_app_first_start_timestamp=1779518757203_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_scrub_move=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_free_cursor=false_free_cursor_spacebar_popup=false_keyboard_font_size_setting=_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pk_simulator_vk_ready=false_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+05-23 12:29:28.616 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.loadAdditionalImeDefsForCurrentEntry():3085 loadAdditionalImeDefsForCurrentEntry(): ndc{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_android_software_xr_api_spatial=false_app_first_start_timestamp=1779518757203_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_scrub_move=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_free_cursor=false_free_cursor_spacebar_popup=false_keyboard_font_size_setting=_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pk_simulator_vk_ready=false_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+05-23 12:29:28.617 32448 32448 I InputMethodEntryManager: InputMethodEntryManager$6.onSuccess():3106 Success load additional ImeDefs, entryChanged=true, additionalImeDefsChanged=false, [nxy{stringId=password, language=und-Latn-x-password, languageTag=und-Latn-x-password, processedConditions={writing_helper_enable_by_word_revert=false, variant=qwerty, true=true, language=en-US, enable_number_row=true, device=phone, enable_number_row_in_password=true, enable_pk_simulator=false}, className=com.google.android.libraries.inputmethod.ime.password.PasswordIme, label=2132019337, keyEventInterpreter=null, inlineComposing=true, autoCapital=true, announceAutoSelectedCandidate=true, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@473cd78, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=number, language=und-Latn-x-number, languageTag=und-Latn-x-number, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019274, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@b93c51, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=number_password, language=und-Latn-x-number-password, languageTag=und-Latn-x-number-password, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019275, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@6e58cb6, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=phone_number, language=und-Latn-x-phone-number, languageTag=und-Latn-x-phone-number, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019371, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@b608db7, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, nxy{stringId=date_time, language=und-Latn-x-date-time, languageTag=und-Latn-x-date-time, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132017755, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=nxr{}, processors=nzr@77cdedb, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=nza@5d44924, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}]
+05-23 12:29:28.617 32448 32448 I InputMethodEntryManager: InputMethodEntryManager.onSuccessLoadingAdditionalImeDefs():3180 Additional ImeDefs have been loaded, maybe notify entry change: true
+05-23 12:29:28.620 32306 32599 W LibraryVersion: Failed to get app version for libraryName: optional-module-text-latin
+05-23 12:29:28.626 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in hxm
+05-23 12:29:28.628 32306 32433 I DynamiteModule: Considering local module com.google.android.gms.mlkit_ocr_common:0 and remote module com.google.android.gms.mlkit_ocr_common:261136000
+05-23 12:29:28.628 32306 32433 I DynamiteModule: Selected remote version of com.google.android.gms.mlkit_ocr_common, version >= 261136000
+05-23 12:29:28.650 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [ncj->oel] takes 28ms
+05-23 12:29:28.658 32448 32484 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213998 -> 0_resource_name_obfuscated : WaitTime = 12 ms : RunTime = 19 ms
+05-23 12:29:28.666 32448 32495 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213990 -> 0_resource_name_obfuscated : WaitTime = 10 ms : RunTime = 82 ms
+05-23 12:29:28.669 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in fhi
+05-23 12:29:28.672 32448 32448 W NotificationCenter: NotificationCenter$NotificationQueue.notifyPendingNotificationsOnExecutor():877 Heavy notify work detected on UI thread: [ncj->oel] takes 22ms
+05-23 12:29:28.680 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.onCurrentInputMethodEntryChanged():2421 onCurrentInputMethodEntryChanged(): imeDefsChanged=true, entryLanguageVariantChanged=true, keyboardContextChanged=true
+05-23 12:29:28.681 32448 32448 I GoogleInputMethodService: GoogleInputMethodService.clearInputMethodServiceData():1113 clearInputMethodServiceData for entryChange
+05-23 12:29:28.682 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():536 Destroy existing keyboard group manager in hul
+05-23 12:29:28.682 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():556 KeyboardGroupManager destroyed in hul.
+05-23 12:29:28.682 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in hul
+05-23 12:29:28.683 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():536 Destroy existing keyboard group manager in fhi
+05-23 12:29:28.690 32462 32549 I NetworkScheduler: Using standalone scheduling engine [CONTEXT service_id=218 ]
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: AbstractOpenableExtension$1.onFailure():144 failed to parse keyboard group def : 2132213997 -> 0_resource_name_obfuscated. 
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: java.util.concurrent.CancellationException: Task was cancelled.
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.i(PG:33)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uuv.r(PG:24)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.get(PG:1)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at a.n(PG:2)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uwm.run(PG:32)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uvu.execute(PG:1)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.g(PG:1)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.l(PG:101)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.cancel(PG:52)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.n(PG:17)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uuz.c(PG:3)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.l(PG:30)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uun.cancel(PG:52)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at fvs.e(PG:64)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at fvs.N(PG:4)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at fvs.O(PG:1)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at miu.h(PG:33)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nfl.ai(PG:20)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at ecd.o(PG:247)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nfg.e(PG:3)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nci.dv(PG:9)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nnv.run(PG:1018)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uvu.execute(PG:1)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at oxh.d(PG:14)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at oiu.l(PG:95)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at oiu.j(PG:33)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at ndr.b(PG:146)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uwm.run(PG:38)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at lqn.execute(PG:12)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uwv.b(PG:3)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at ndx.O(PG:350)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at ndx.n(PG:65)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nck.d(PG:182)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nck.dv(PG:5)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at nnv.run(PG:1018)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at lqn.execute(PG:12)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at oxh.d(PG:14)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at oiu.l(PG:95)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at oiu.j(PG:33)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at ndr.b(PG:116)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at uwm.run(PG:38)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at android.os.Handler.handleCallback(Handler.java:1095)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at android.os.Handler.dispatchMessage(Handler.java:125)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at android.os.Looper.loopOnce(Looper.java:296)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at android.os.Looper.loop(Looper.java:397)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at android.app.ActivityThread.main(ActivityThread.java:9523)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at java.lang.reflect.Method.invoke(Native Method)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+05-23 12:29:28.703 32448 32448 E AbstractOpenableExtension: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+05-23 12:29:28.704 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension$3.onFailure():564 Failed to load KeyboardGroupManager in fhi.
+05-23 12:29:28.704 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in fhi
+05-23 12:29:28.705 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():536 Destroy existing keyboard group manager in hxm
+05-23 12:29:28.705 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension$3.onFailure():564 Failed to load KeyboardGroupManager in hxm.
+05-23 12:29:28.705 32448 32448 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in hxm
+05-23 12:29:28.707 32593 32593 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
