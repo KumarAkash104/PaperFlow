@@ -315,7 +315,8 @@ fun PaperFlowNavGraph(navController: NavHostController) {
                         appContext = context.applicationContext,
                         pdfPath = doc?.title ?: "Document",
                         repository = repository,
-                        imagePagePaths = imagePaths
+                        imagePagePaths = imagePaths,
+                        initialDocumentId = docId
                     )
                 }
             }
@@ -388,20 +389,17 @@ fun PaperFlowNavGraph(navController: NavHostController) {
             val pageId = backStack.arguments?.getString("pageId") ?: return@composable
             val scope = rememberCoroutineScope()
 
-            val signatureBitmap = remember { SignatureHolder.getAndClear() }
+            val signatureBitmap = remember { SignatureHolder.get() }
 
             var pageBitmap by remember { mutableStateOf<Bitmap?>(null) }
             var pageImagePath by remember { mutableStateOf<String?>(null) }
 
             LaunchedEffect(pageId) {
                 withContext(Dispatchers.IO) {
-                    val allDocs = repository.getAllDocumentsSync()
-                    for (doc in allDocs) {
-                        val pages = repository.getPagesSync(doc.id)
-                        pages.find { it.id == pageId }?.let { page ->
-                            pageBitmap = ImageProcessor.loadBitmap(page.imagePath, 1500)
-                            pageImagePath = page.imagePath
-                        }
+                    val page = repository.getPage(pageId)
+                    if (page != null) {
+                        pageBitmap = ImageProcessor.loadBitmap(page.imagePath, 1500)
+                        pageImagePath = page.imagePath
                     }
                 }
             }
@@ -410,7 +408,10 @@ fun PaperFlowNavGraph(navController: NavHostController) {
                 SignaturePlacementScreen(
                     pageBitmap = pageBitmap!!,
                     signatureBitmap = signatureBitmap,
-                    onBack = { navController.popBackStack() },
+                    onBack = {
+                        SignatureHolder.clear()
+                        navController.popBackStack()
+                    },
                     onApply = { resultBitmap ->
                         // Save flattened result back to page file
                         pageImagePath?.let { path ->
@@ -418,6 +419,7 @@ fun PaperFlowNavGraph(navController: NavHostController) {
                                 ImageProcessor.saveBitmap(resultBitmap, File(path))
                             }
                         }
+                        SignatureHolder.clear()
                         // Go back to review
                         navController.popBackStack()
                     },
@@ -440,13 +442,10 @@ fun PaperFlowNavGraph(navController: NavHostController) {
 
             LaunchedEffect(pageId) {
                 withContext(Dispatchers.IO) {
-                    val allDocs = repository.getAllDocumentsSync()
-                    for (doc in allDocs) {
-                        val pages = repository.getPagesSync(doc.id)
-                        pages.find { it.id == pageId }?.let { page ->
-                            pageBitmap = ImageProcessor.loadBitmap(page.imagePath, 1500)
-                            pageImagePath = page.imagePath
-                        }
+                    val page = repository.getPage(pageId)
+                    if (page != null) {
+                        pageBitmap = ImageProcessor.loadBitmap(page.imagePath, 1500)
+                        pageImagePath = page.imagePath
                     }
                 }
             }

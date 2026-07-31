@@ -47,7 +47,7 @@ class PageEditorViewModel(
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
 
     private var previewJob: Job? = null
-    private val previewSize = 8000
+    private val previewSize = 1600
 
     init {
         loadPage()
@@ -63,14 +63,13 @@ class PageEditorViewModel(
                 baseBitmap = null
             )
             val (page, pages) = withContext(Dispatchers.IO) {
-                // Find page from any document
-                val allDocs = repository.getAllDocumentsSync()
-                for (doc in allDocs) {
-                    val docPages = repository.getPagesSync(doc.id)
-                    val p = docPages.find { it.id == targetPageId }
-                    if (p != null) return@withContext p to docPages
+                val p = repository.getPage(targetPageId)
+                if (p != null) {
+                    val docPages = repository.getPagesSync(p.documentId)
+                    p to docPages
+                } else {
+                    null to emptyList()
                 }
-                null to emptyList()
             }
             if (page == null) return@launch
 

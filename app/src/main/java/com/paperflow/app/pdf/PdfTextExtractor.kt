@@ -143,6 +143,21 @@ class PdfTextExtractor(private val pageIdx: Int) : PDFTextStripper() {
     }
 
     companion object {
+        fun extractTextFromPage(file: File, pageIndex: Int): List<PdfTextBlock> {
+            val document = PDDocument.load(file)
+            try {
+                if (pageIndex < 0 || pageIndex >= document.numberOfPages) return emptyList()
+                val extractor = PdfTextExtractor(pageIndex)
+                extractor.writeText(document, NullWriter)
+                return extractor.blocks
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return emptyList()
+            } finally {
+                document.close()
+            }
+        }
+
         fun extractTextFromPdf(file: File): List<PdfTextBlock> {
             val document = PDDocument.load(file)
             val allBlocks = mutableListOf<PdfTextBlock>()

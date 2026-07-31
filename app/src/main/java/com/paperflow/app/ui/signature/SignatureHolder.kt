@@ -13,6 +13,12 @@ object SignatureHolder {
         signatureBitmap = bitmap
     }
 
+    fun get(): Bitmap? = signatureBitmap
+
+    fun clear() {
+        signatureBitmap = null
+    }
+
     fun getAndClear(): Bitmap? {
         val bmp = signatureBitmap
         signatureBitmap = null

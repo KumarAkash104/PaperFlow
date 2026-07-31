@@ -1,5 +1,6 @@
 package com.paperflow.app.ui.editor
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,49 +11,51 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.TextFormat
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -61,39 +64,42 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.paperflow.app.pdf.OverlayType
 import com.paperflow.app.pdf.PdfEditOverlay
 import com.paperflow.app.pdf.PdfTextBlock
+import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfEditorScreen(
     viewModel: PdfEditorViewModel,
@@ -108,23 +114,20 @@ fun PdfEditorScreen(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
-    // Track current visible page for "Add Text"
-    val listState = rememberLazyListState()
-    var currentVisiblePage by remember { mutableStateOf(0) }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex }.collect { page ->
-            currentVisiblePage = page
-        }
-    }
+    // Modal page grid drawer
+    var showPageGridDrawer by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Observe saved state to automatically exit
     LaunchedEffect(uiState.savedFilePath) {
         uiState.savedFilePath?.let {
+            Toast.makeText(context, "Edited PDF saved successfully!", Toast.LENGTH_SHORT).show()
             viewModel.clearSavedState()
             onBack()
         }
     }
+
+    val activeMeta = uiState.pagesMeta.getOrNull(uiState.activePageIndex)
 
     Scaffold(
         topBar = {
@@ -136,9 +139,9 @@ fun PdfEditorScreen(
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1
                         )
-                        if (uiState.pages.isNotEmpty()) {
+                        if (uiState.totalPageCount > 0) {
                             Text(
-                                "${uiState.overlays.size} edits",
+                                "Page ${uiState.activePageIndex + 1} of ${uiState.totalPageCount} • ${uiState.overlays.size} edits",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -151,16 +154,14 @@ fun PdfEditorScreen(
                     }
                 },
                 actions = {
-                    if (uiState.overlays.isNotEmpty()) {
-                        IconButton(
-                            onClick = { viewModel.saveEdits() },
-                            enabled = !uiState.isSaving && !uiState.isProcessing
-                        ) {
-                            if (uiState.isSaving) {
-                                CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Save, "Save PDF")
-                            }
+                    IconButton(
+                        onClick = { viewModel.saveEdits() },
+                        enabled = !uiState.isSaving && !uiState.isProcessing
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Save, "Save PDF", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -168,31 +169,6 @@ fun PdfEditorScreen(
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                 ),
             )
-        },
-        floatingActionButton = {
-            if (!uiState.isProcessing && uiState.pages.isNotEmpty() && uiState.selectedOverlayId == null) {
-                FloatingActionButton(
-                    onClick = {
-                        viewModel.addCustomTextOverlay(
-                            pageIndex = currentVisiblePage.coerceIn(0, (uiState.pages.size - 1).coerceAtLeast(0)),
-                            xFraction = 0.1f,
-                            yFraction = 0.3f
-                        )
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Add, "Add Text", modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Add Text", fontWeight = FontWeight.Medium)
-                    }
-                }
-            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -207,10 +183,10 @@ fun PdfEditorScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CircularProgressIndicator(strokeWidth = 3.dp)
+                    CircularProgressIndicator(strokeWidth = 2.5.dp)
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "Analyzing PDF…",
+                        "Loading PDF…",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -229,8 +205,8 @@ fun PdfEditorScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
-            } else {
-                // ── Zoomable content ──
+            } else if (activeMeta != null) {
+                // ── Zoomable Active Page Canvas ──
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -240,7 +216,6 @@ fun PdfEditorScreen(
                             translationX = offsetX
                             translationY = offsetY
                         }
-                        // Pinch-to-zoom + single-finger pan when zoomed
                         .pointerInput(Unit) {
                             awaitEachGesture {
                                 awaitFirstDown(requireUnconsumed = false)
@@ -248,533 +223,484 @@ fun PdfEditorScreen(
                                     val event = awaitPointerEvent()
                                     val pointerCount = event.changes.count { it.pressed }
                                     if (pointerCount >= 2) {
-                                        val zoom = event.calculateZoom()
-                                        val pan = event.calculatePan()
-                                        scale = (scale * zoom).coerceIn(1f, 5f)
+                                        // Pinch-to-zoom
+                                        val zoomChange = event.calculateZoom()
+                                        val panChange = event.calculatePan()
+                                        scale = (scale * zoomChange).coerceIn(0.8f, 4f)
                                         if (scale > 1f) {
-                                            offsetX += pan.x
-                                            offsetY += pan.y
-                                            val maxX = (size.width * (scale - 1f)) / 2f
-                                            val maxY = (size.height * (scale - 1f)) / 2f
-                                            offsetX = offsetX.coerceIn(-maxX, maxX)
-                                            offsetY = offsetY.coerceIn(-maxY, maxY)
+                                            offsetX += panChange.x
+                                            offsetY += panChange.y
                                         } else {
                                             offsetX = 0f
                                             offsetY = 0f
                                         }
                                         event.changes.forEach { it.consume() }
                                     } else if (pointerCount == 1 && scale > 1.05f) {
-                                        val pan = event.calculatePan()
-                                        if (pan.x != 0f || pan.y != 0f) {
-                                            offsetX += pan.x
-                                            offsetY += pan.y
-                                            val maxX = (size.width * (scale - 1f)) / 2f
-                                            val maxY = (size.height * (scale - 1f)) / 2f
-                                            offsetX = offsetX.coerceIn(-maxX, maxX)
-                                            offsetY = offsetY.coerceIn(-maxY, maxY)
-                                            event.changes.forEach { it.consume() }
-                                        }
+                                        // Single finger pan when zoomed in
+                                        val panChange = event.calculatePan()
+                                        offsetX += panChange.x
+                                        offsetY += panChange.y
+                                        event.changes.forEach { it.consume() }
                                     }
                                 } while (event.changes.any { it.pressed })
                             }
                         }
-                        // Double-tap zoom toggle
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onDoubleTap = { tapOffset ->
-                                    if (scale > 1.1f) {
-                                        scope.launch {
-                                            val startScale = scale
-                                            val startOffsetX = offsetX
-                                            val startOffsetY = offsetY
-                                            androidx.compose.animation.core.animate(0f, 1f, animationSpec = androidx.compose.animation.core.tween(300)) { value, _ ->
-                                                scale = startScale + (1f - startScale) * value
-                                                offsetX = startOffsetX + (0f - startOffsetX) * value
-                                                offsetY = startOffsetY + (0f - startOffsetY) * value
-                                            }
-                                        }
-                                    } else {
-                                        val targetScale = 2.5f
-                                        val centerX = size.width / 2f
-                                        val centerY = size.height / 2f
-                                        var targetOffsetX = (centerX - tapOffset.x) * (targetScale - 1f)
-                                        var targetOffsetY = (centerY - tapOffset.y) * (targetScale - 1f)
-                                        val maxX = (size.width * (targetScale - 1f)) / 2f
-                                        val maxY = (size.height * (targetScale - 1f)) / 2f
-                                        targetOffsetX = targetOffsetX.coerceIn(-maxX, maxX)
-                                        targetOffsetY = targetOffsetY.coerceIn(-maxY, maxY)
-                                        
-                                        scope.launch {
-                                            val startScale = scale
-                                            val startOffsetX = offsetX
-                                            val startOffsetY = offsetY
-                                            androidx.compose.animation.core.animate(0f, 1f, animationSpec = androidx.compose.animation.core.tween(300)) { value, _ ->
-                                                scale = startScale + (targetScale - startScale) * value
-                                                offsetX = startOffsetX + (targetOffsetX - startOffsetX) * value
-                                                offsetY = startOffsetY + (targetOffsetY - startOffsetY) * value
-                                            }
-                                        }
-                                    }
-                                }
-                            )
-                        }
+                        .clickable { viewModel.selectOverlay(null) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Pages list
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 100.dp, top = 8.dp, start = 8.dp, end = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        userScrollEnabled = scale <= 1.05f
-                    ) {
-                        items(uiState.pages) { page ->
-                            EditorPageContainer(
-                                page = page,
-                                extractedBlocks = uiState.extractedBlocks,
-                                overlays = uiState.overlays,
-                                selectedOverlayId = uiState.selectedOverlayId,
-                                viewModel = viewModel
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ── Compact Edit Toolbar ──
-            AnimatedVisibility(
-                visible = uiState.selectedOverlayId != null,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                val selectedOverlay = uiState.overlays.find { it.id == uiState.selectedOverlayId }
-                if (selectedOverlay != null) {
-                    CompactEditToolbar(
-                        overlay = selectedOverlay,
-                        onUpdate = { viewModel.updateSelectedOverlay(it) },
-                        onDelete = { viewModel.deleteSelectedOverlay() },
-                        onClose = { viewModel.selectOverlay(null) }
+                    ActivePageCanvas(
+                        viewModel = viewModel,
+                        pageMeta = activeMeta,
+                        activePageBlocks = uiState.activePageBlocks,
+                        overlays = uiState.overlays.filter { it.pageIndex == activeMeta.index },
+                        selectedOverlayId = uiState.selectedOverlayId,
+                        onSelectOverlay = { id -> viewModel.selectOverlay(id) },
+                        onTapTextBlock = { block -> viewModel.handleTextTapped(activeMeta.index, block) },
+                        onUpdateOverlay = { updateBlock -> viewModel.updateSelectedOverlay(updateBlock) }
                     )
                 }
-            }
-        }
-    }
-}
 
-@Composable
-fun EditorPageContainer(
-    page: PdfPageData,
-    extractedBlocks: List<PdfTextBlock>,
-    overlays: List<PdfEditOverlay>,
-    selectedOverlayId: String?,
-    viewModel: PdfEditorViewModel
-) {
-    val density = LocalDensity.current
+                // ── Floating Overlay Controls (When an item is selected) ──
+                AnimatedVisibility(
+                    visible = uiState.selectedOverlayId != null,
+                    enter = slideInVertically { -it } + fadeIn(),
+                    exit = slideOutVertically { -it } + fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp)
+                ) {
+                    val selected = uiState.overlays.find { it.id == uiState.selectedOverlayId }
+                    if (selected != null) {
+                        SelectedOverlayControlBar(
+                            overlay = selected,
+                            onUpdate = { updateBlock -> viewModel.updateSelectedOverlay(updateBlock) },
+                            onDelete = { viewModel.deleteSelectedOverlay() },
+                            onDeselect = { viewModel.selectOverlay(null) }
+                        )
+                    }
+                }
 
-    Card(
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val pageAspectRatio = page.width / page.height
-            val boxW = maxWidth
-            val boxH = boxW / pageAspectRatio
-
-            Box(modifier = Modifier.size(boxW, boxH)) {
-                // ── Page image ──
-                AsyncImage(
-                    model = File(page.imagePath),
-                    contentDescription = "Page ${page.index + 1}",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // ── Tap handler for selecting/creating overlays ──
+                // ── Bottom Glassmorphic Action Bar ──
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(page.index) {
-                            detectTapGestures { offset ->
-                                val clickXFr = offset.x / size.width.toFloat()
-                                val clickYFr = offset.y / size.height.toFloat()
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    EditorBottomActionBar(
+                        onOpenPageGrid = { showPageGridDrawer = true },
+                        onAddText = { viewModel.addCustomTextOverlay(uiState.activePageIndex) },
+                        onAddWhiteout = { viewModel.addWhiteoutMaskOverlay(uiState.activePageIndex) },
+                        onRotatePage = { viewModel.rotatePage(uiState.activePageIndex) },
+                        onDeletePage = { viewModel.deletePage(uiState.activePageIndex) },
+                        canDeletePage = uiState.totalPageCount > 1
+                    )
+                }
+            }
 
-                                // 1. Check overlays first
-                                val tappedOverlay = overlays
-                                    .filter { it.pageIndex == page.index }
-                                    .find { o ->
-                                        clickXFr >= o.xFraction - 0.02f && clickXFr <= o.xFraction + o.widthFraction + 0.02f &&
-                                        clickYFr >= o.yFraction - 0.02f && clickYFr <= o.yFraction + o.heightFraction + 0.02f
-                                    }
-                                if (tappedOverlay != null) {
-                                    viewModel.selectOverlay(tappedOverlay.id)
-                                    return@detectTapGestures
-                                }
-
-                                // 2. Find nearest extracted text block (expanded tap area)
-                                val clickedBlock = extractedBlocks
-                                    .filter { it.pageIndex == page.index }
-                                    .minByOrNull { block ->
-                                        val bxCenter = (block.x + block.width / 2f) / page.width
-                                        val byCenter = (block.y + block.height / 2f) / page.height
-                                        val dx = clickXFr - bxCenter
-                                        val dy = clickYFr - byCenter
-                                        dx * dx + dy * dy
-                                    }?.takeIf { block ->
-                                        val bxCenter = (block.x + block.width / 2f) / page.width
-                                        val byCenter = (block.y + block.height / 2f) / page.height
-                                        val dx = clickXFr - bxCenter
-                                        val dy = clickYFr - byCenter
-                                        // Within ~5% radius
-                                        dx * dx + dy * dy < 0.003f
-                                    }
-
-                                if (clickedBlock != null) {
-                                    viewModel.handleTextTapped(page.index, clickedBlock)
-                                } else {
-                                    viewModel.selectOverlay(null)
-                                }
+            // ── Modal Page Grid Drawer ──
+            if (showPageGridDrawer) {
+                ModalBottomSheet(
+                    onDismissRequest = { showPageGridDrawer = false },
+                    sheetState = sheetState,
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    PageGridDrawerContent(
+                        viewModel = viewModel,
+                        pagesMeta = uiState.pagesMeta,
+                        activePageIndex = uiState.activePageIndex,
+                        onSelectPage = { index ->
+                            viewModel.setActivePage(index)
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                showPageGridDrawer = false
                             }
                         }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Interactive canvas displaying high-res page image, text bounding boxes, and editable overlays.
+ */
+@Composable
+fun ActivePageCanvas(
+    viewModel: PdfEditorViewModel,
+    pageMeta: PdfPageMeta,
+    activePageBlocks: List<PdfTextBlock>,
+    overlays: List<PdfEditOverlay>,
+    selectedOverlayId: String?,
+    onSelectOverlay: (String?) -> Unit,
+    onTapTextBlock: (PdfTextBlock) -> Unit,
+    onUpdateOverlay: ((PdfEditOverlay) -> PdfEditOverlay) -> Unit
+) {
+    var highResPath by remember(pageMeta.index) { mutableStateOf<String?>(null) }
+    var isLoading by remember(pageMeta.index) { mutableStateOf(true) }
+
+    LaunchedEffect(pageMeta.index) {
+        isLoading = true
+        highResPath = viewModel.getPageHighResPath(pageMeta.index)
+        isLoading = false
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .padding(16.dp)
+            .graphicsLayer { rotationZ = pageMeta.rotation.toFloat() },
+        contentAlignment = Alignment.Center
+    ) {
+        val aspect = pageMeta.width / pageMeta.height.coerceAtLeast(1f)
+        val containerWidth = maxWidth
+        val containerHeight = containerWidth / aspect
+
+        Box(
+            modifier = Modifier
+                .size(containerWidth, containerHeight)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.White)
+                .border(1.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+        ) {
+            // Page Image
+            if (highResPath != null) {
+                AsyncImage(
+                    model = File(highResPath!!),
+                    contentDescription = "Page ${pageMeta.index + 1}",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
                 )
+            } else if (isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(32.dp))
+                }
+            }
 
-                // ── Render overlays (whiteout + text) ──
-                val pageOverlays = overlays.filter { it.pageIndex == page.index }
-                pageOverlays.forEach { overlay ->
-                    val leftDp = (overlay.xFraction * boxW.value).dp
-                    val topDp = (overlay.yFraction * boxH.value).dp
-                    val widthDp = (overlay.widthFraction * boxW.value).dp
-                    val heightDp = (overlay.heightFraction * boxH.value).dp
+            // Tappable Text Bounding Boxes (for existing PDF text blocks)
+            activePageBlocks.forEach { block ->
+                val xPx = (block.x / pageMeta.width) * containerWidth.value
+                val yPx = (block.y / pageMeta.height) * containerHeight.value
+                val wPx = (block.width / pageMeta.width) * containerWidth.value
+                val hPx = (block.height / pageMeta.height) * containerHeight.value
 
-                    // Whiteout
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(xPx.dp.roundToPx(), yPx.dp.roundToPx()) }
+                        .size(wPx.dp, hPx.dp)
+                        .border(1.dp, Color(0xFF2196F3).copy(alpha = 0.35f), RoundedCornerShape(2.dp))
+                        .clickable { onTapTextBlock(block) }
+                )
+            }
+
+            // Render Overlays (Text edit, whiteout, signature, stamp)
+            overlays.forEach { overlay ->
+                val isSelected = overlay.id == selectedOverlayId
+                val xPx = overlay.xFraction * containerWidth.value
+                val yPx = overlay.yFraction * containerHeight.value
+                val wPx = overlay.widthFraction * containerWidth.value
+                val hPx = overlay.heightFraction * containerHeight.value
+
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(xPx.dp.roundToPx(), yPx.dp.roundToPx()) }
+                        .size(wPx.dp, hPx.dp)
+                        .clickable { onSelectOverlay(overlay.id) }
+                        .then(
+                            if (isSelected) Modifier.border(1.5.dp, Color(0xFF1E88E5), RoundedCornerShape(4.dp))
+                            else Modifier
+                        )
+                ) {
+                    // Whiteout mask layer
                     if (overlay.whiteout) {
                         Box(
                             modifier = Modifier
-                                .offset(leftDp - 1.dp, topDp - 1.dp)
-                                .size(widthDp + 2.dp, heightDp + 2.dp)
-                                .background(Color.White)
+                                .fillMaxSize()
+                                .background(Color(overlay.color))
                         )
                     }
 
-                    val isSelected = overlay.id == selectedOverlayId
-
-                    // Draggable text overlay
-                    Box(
-                        modifier = Modifier
-                            .offset(leftDp, topDp)
-                            .size(widthDp, heightDp)
-                            .then(
-                                if (isSelected) Modifier.border(
-                                    1.5.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    RoundedCornerShape(3.dp)
-                                ) else Modifier
+                    // Content layer
+                    when (overlay.type) {
+                        OverlayType.TEXT_EDIT, OverlayType.CUSTOM_TEXT -> {
+                            Text(
+                                text = overlay.text,
+                                fontSize = (overlay.fontSize * (containerWidth.value / pageMeta.width)).sp,
+                                fontWeight = if (overlay.isBold) FontWeight.Bold else FontWeight.Normal,
+                                fontStyle = if (overlay.isItalic) FontStyle.Italic else FontStyle.Normal,
+                                fontFamily = when (overlay.fontName) {
+                                    "Serif" -> FontFamily.Serif
+                                    "Monospace" -> FontFamily.Monospace
+                                    else -> FontFamily.SansSerif
+                                },
+                                color = Color(overlay.color),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(2.dp)
                             )
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
-                                else Color.Transparent
-                            )
-                            .clickable { viewModel.selectOverlay(overlay.id) }
-                            .pointerInput(overlay.id) {
-                                detectDragGestures { change, dragAmount ->
-                                    change.consume()
-                                    // Convert drag pixels to fraction of page
-                                    val dxFr = dragAmount.x / (with(density) { boxW.toPx() })
-                                    val dyFr = dragAmount.y / (with(density) { boxH.toPx() })
-                                    viewModel.updateOverlayById { o ->
-                                        if (o.id == overlay.id) {
-                                            o.copy(
-                                                xFraction = (o.xFraction + dxFr).coerceIn(0f, 1f - o.widthFraction),
-                                                yFraction = (o.yFraction + dyFr).coerceIn(0f, 1f - o.heightFraction)
-                                            )
-                                        } else o
-                                    }
-                                    viewModel.selectOverlay(overlay.id)
-                                }
-                            },
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        val fontFamily = when (overlay.fontName.lowercase()) {
-                            "serif" -> FontFamily.Serif
-                            "monospace" -> FontFamily.Monospace
-                            else -> FontFamily.SansSerif
                         }
-                        Text(
-                            text = overlay.text,
-                            color = Color(overlay.color),
-                            fontSize = (overlay.fontSize * (boxH.value / page.height)).sp,
-                            fontFamily = fontFamily,
-                            fontWeight = if (overlay.isBold) FontWeight.Bold else FontWeight.Normal,
-                            fontStyle = if (overlay.isItalic) FontStyle.Italic else FontStyle.Normal,
-                            modifier = Modifier.padding(horizontal = 1.dp),
-                            maxLines = 3
-                        )
+                        OverlayType.SIGNATURE, OverlayType.IMAGE_STAMP -> {
+                            if (overlay.imagePath != null && File(overlay.imagePath).exists()) {
+                                AsyncImage(
+                                    model = File(overlay.imagePath),
+                                    contentDescription = "Overlay Image",
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                        OverlayType.WHITEOUT_MASK -> {
+                            // Already rendered whiteout background box above
+                        }
                     }
-                }
-
-                // ── Page number badge ──
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(6.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
-                            RoundedCornerShape(6.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        "Page ${page.index + 1}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
     }
 }
 
-/** Compact edit toolbar — clean UI with clear Done/Delete semantics. */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Floating bar when an overlay is selected to edit text, size, color, or delete.
+ */
 @Composable
-fun CompactEditToolbar(
+fun SelectedOverlayControlBar(
     overlay: PdfEditOverlay,
     onUpdate: ((PdfEditOverlay) -> PdfEditOverlay) -> Unit,
     onDelete: () -> Unit,
-    onClose: () -> Unit
+    onDeselect: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        if (overlay.type == OverlayType.TEXT_EDIT || overlay.type == OverlayType.CUSTOM_TEXT) {
+            OutlinedTextField(
+                value = overlay.text,
+                onValueChange = { newText -> onUpdate { it.copy(text = newText) } },
+                label = { Text("Edit Text") },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // ── Row 1: Text input + Done ✓ + Delete 🗑 ──
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = overlay.text,
-                    onValueChange = { newText -> onUpdate { it.copy(text = newText) } },
-                    placeholder = { Text("Edit text…") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(Modifier.width(8.dp))
-
-                // ✓ Done — confirms edit and closes toolbar
+            if (overlay.type == OverlayType.TEXT_EDIT || overlay.type == OverlayType.CUSTOM_TEXT) {
+                // Bold toggle
                 IconButton(
-                    onClick = onClose,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary,
-                            CircleShape
-                        )
+                    onClick = { onUpdate { it.copy(isBold = !it.isBold) } },
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        Icons.Default.Check, "Done",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(22.dp)
+                        Icons.Default.FormatBold,
+                        "Bold",
+                        tint = if (overlay.isBold) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
-                Spacer(Modifier.width(6.dp))
-
-                // 🗑 Delete — removes the text overlay
+                // Italic toggle
                 IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier
-                        .size(34.dp)
-                        .background(
-                            MaterialTheme.colorScheme.errorContainer,
-                            CircleShape
-                        )
+                    onClick = { onUpdate { it.copy(isItalic = !it.isItalic) } },
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        Icons.Default.Delete, "Delete",
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // ── Row 2: Bold + Italic + Font + Size ──
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Bold
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (overlay.isBold) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        )
-                        .clickable { onUpdate { it.copy(isBold = !it.isBold) } },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.FormatBold, null,
-                        tint = if (overlay.isBold) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        Icons.Default.FormatItalic,
+                        "Italic",
+                        tint = if (overlay.isItalic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
-                // Italic
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (overlay.isItalic) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        )
-                        .clickable { onUpdate { it.copy(isItalic = !it.isItalic) } },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.FormatItalic, null,
-                        tint = if (overlay.isItalic) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                // Font dropdown
-                var showFontMenu by remember { mutableStateOf(false) }
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .height(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { showFontMenu = true }
-                            .padding(horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
+                // Font size controls
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { onUpdate { it.copy(fontSize = (it.fontSize - 1f).coerceAtLeast(8f)) } },
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Text(
-                            overlay.fontName,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("-", fontWeight = FontWeight.Bold)
                     }
-                    DropdownMenu(expanded = showFontMenu, onDismissRequest = { showFontMenu = false }) {
-                        listOf("Sans" to "Sans-Serif", "Serif" to "Serif", "Monospace" to "Mono").forEach { (key, label) ->
-                            DropdownMenuItem(
-                                text = { Text(label) },
-                                onClick = { onUpdate { it.copy(fontName = key) }; showFontMenu = false },
-                                trailingIcon = if (overlay.fontName == key) {
-                                    { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
-                                } else null
-                            )
-                        }
+                    Text("${overlay.fontSize.roundToInt()}pt", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    IconButton(
+                        onClick = { onUpdate { it.copy(fontSize = (it.fontSize + 1f).coerceAtMost(48f)) } },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Text("+", fontWeight = FontWeight.Bold)
                     }
                 }
-
-                Spacer(Modifier.weight(1f))
-
-                // Font size
-                Text(
-                    "${overlay.fontSize.toInt()}pt",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(28.dp),
-                    textAlign = TextAlign.Center
-                )
-                Slider(
-                    value = overlay.fontSize,
-                    onValueChange = { onUpdate { o -> o.copy(fontSize = it) } },
-                    valueRange = 6f..72f,
-                    modifier = Modifier.width(100.dp),
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary
-                    )
-                )
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.weight(1f))
 
-            // ── Row 3: Erase toggle + Color palette ──
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Erase old text toggle
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (overlay.whiteout) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        )
-                        .clickable { onUpdate { o -> o.copy(whiteout = !o.whiteout) } }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        "Erase",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (overlay.whiteout) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (overlay.whiteout) FontWeight.SemiBold else FontWeight.Normal
-                    )
-                }
+            // Delete Overlay
+            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Delete, "Delete Overlay", tint = Color.Red.copy(alpha = 0.8f))
+            }
 
-                Spacer(Modifier.width(12.dp))
-
-                // Color palette
-                val colors = listOf(
-                    0xFF000000L, 0xFF444444L, 0xFF1976D2L, 0xFFD32F2FL,
-                    0xFF388E3CL, 0xFFF57C00L, 0xFF7B1FA2L
-                )
-                colors.forEach { colorVal ->
-                    val color = Color(colorVal)
-                    val isColorSelected = overlay.color == colorVal.toInt()
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 3.dp)
-                            .size(if (isColorSelected) 26.dp else 22.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                            .then(
-                                if (isColorSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                else Modifier.border(0.5.dp, Color.LightGray, CircleShape)
-                            )
-                            .clickable { onUpdate { it.copy(color = colorVal.toInt()) } }
-                    )
-                }
+            // Deselect / Done
+            IconButton(onClick = onDeselect, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Check, "Done", tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
 }
 
+/**
+ * Bottom glassmorphic dock with targeted editing action buttons.
+ */
+@Composable
+fun EditorBottomActionBar(
+    onOpenPageGrid: () -> Unit,
+    onAddText: () -> Unit,
+    onAddWhiteout: () -> Unit,
+    onRotatePage: () -> Unit,
+    onDeletePage: () -> Unit,
+    canDeletePage: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Page Grid Selector
+        IconButton(onClick = onOpenPageGrid) {
+            Icon(Icons.Default.GridView, "Page Grid", tint = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Add Text
+        IconButton(onClick = onAddText) {
+            Icon(Icons.Default.TextFields, "Add Text", tint = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Whiteout Mask
+        IconButton(onClick = onAddWhiteout) {
+            Icon(Icons.Default.CropSquare, "Whiteout", tint = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Rotate Page
+        IconButton(onClick = onRotatePage) {
+            Icon(Icons.Default.RotateRight, "Rotate Page", tint = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Delete Page
+        IconButton(onClick = onDeletePage, enabled = canDeletePage) {
+            Icon(
+                Icons.Default.Delete,
+                "Delete Page",
+                tint = if (canDeletePage) Color.Red.copy(alpha = 0.8f) else Color.Gray.copy(alpha = 0.4f)
+            )
+        }
+    }
+}
+
+/**
+ * Modal bottom sheet presenting a 3-column thumbnail grid of all document pages for 1-tap switching.
+ */
+@Composable
+fun PageGridDrawerContent(
+    viewModel: PdfEditorViewModel,
+    pagesMeta: List<PdfPageMeta>,
+    activePageIndex: Int,
+    onSelectPage: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Select Page",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                "${pagesMeta.size} pages",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(380.dp)
+        ) {
+            items(pagesMeta) { pageMeta ->
+                val isCurrent = pageMeta.index == activePageIndex
+                var thumbPath by remember(pageMeta.index) { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(pageMeta.index) {
+                    thumbPath = viewModel.getPageThumbnailPath(pageMeta.index)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(0.75f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .border(
+                            if (isCurrent) 2.5.dp else 1.dp,
+                            if (isCurrent) MaterialTheme.colorScheme.primary else Color.LightGray.copy(alpha = 0.6f),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable { onSelectPage(pageMeta.index) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (thumbPath != null) {
+                        AsyncImage(
+                            model = File(thumbPath!!),
+                            contentDescription = "Page ${pageMeta.index + 1}",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { rotationZ = pageMeta.rotation.toFloat() }
+                        )
+                    } else {
+                        CircularProgressIndicator(strokeWidth = 1.5.dp, modifier = Modifier.size(20.dp))
+                    }
+
+                    // Page number badge
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.7f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            "${pageMeta.index + 1}",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

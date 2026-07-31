@@ -32,7 +32,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "paperflow_database",
                 )
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

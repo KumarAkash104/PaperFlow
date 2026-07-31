@@ -6,6 +6,8 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.toArgb
 import com.paperflow.app.data.repository.DocumentRepository
 import com.paperflow.app.pdf.PdfImporter
 import com.paperflow.app.pdf.PdfTools
@@ -97,8 +99,11 @@ class PdfReaderViewModel(
     private val appContext: Context,
     private val pdfPath: String,
     private val repository: DocumentRepository? = null,
-    private val imagePagePaths: List<String>? = null
+    private val imagePagePaths: List<String>? = null,
+    private val initialDocumentId: String? = null
 ) : ViewModel() {
+
+    private var activeDocumentId: String? = initialDocumentId
 
     private val _uiState = MutableStateFlow(PdfReaderUiState())
     val uiState: StateFlow<PdfReaderUiState> = _uiState.asStateFlow()
@@ -261,6 +266,128 @@ class PdfReaderViewModel(
                 }
                 _uiState.value = _uiState.value.copy(savedToDocuments = true)
             } catch (_: Exception) {}
+        }
+    }
+
+    suspend fun saveAnnotatedDocument(
+        title: String,
+        pageStrokesMap: Map<Int, List<ReaderStrokePath>>
+    ): Boolean {
+        if (repository == null) return false
+        return withContext(Dispatchers.IO) {
+            try {
+                val existingDocId = activeDocumentId
+                if (existingDocId != null) {
+                    // ── Update existing document ──
+                    val doc = repository.getDocument(existingDocId)
+                    val pages = repository.getPagesSync(existingDocId).sortedBy { it.pageIndex }
+
+                    for ((pageIndex, pageEntity) in pages.withIndex()) {
+                        val strokes = pageStrokesMap[pageIndex] ?: emptyList()
+                        if (strokes.isNotEmpty() && File(pageEntity.imagePath).exists()) {
+                            val srcBmp = BitmapFactory.decodeFile(pageEntity.imagePath)
+                            if (srcBmp != null) {
+                                val annotatedBmp = srcBmp.copy(Bitmap.Config.ARGB_8888, true)
+                                srcBmp.recycle()
+
+                                val canvas = android.graphics.Canvas(annotatedBmp)
+                                val w = annotatedBmp.width.toFloat()
+                                val h = annotatedBmp.height.toFloat()
+
+                                strokes.forEach { stroke ->
+                                    if (stroke.points.size < 2) return@forEach
+                                    val paint = android.graphics.Paint().apply {
+                                        color = stroke.color.toArgb()
+                                        strokeWidth = stroke.width * (w / 1080f).coerceAtLeast(1f)
+                                        style = android.graphics.Paint.Style.STROKE
+                                        strokeCap = if (stroke.isHighlighter) android.graphics.Paint.Cap.SQUARE else android.graphics.Paint.Cap.ROUND
+                                        strokeJoin = if (stroke.isHighlighter) android.graphics.Paint.Join.MITER else android.graphics.Paint.Join.ROUND
+                                        isAntiAlias = true
+                                    }
+                                    val path = android.graphics.Path().apply {
+                                        val first = stroke.points.first()
+                                        moveTo(first.x * w, first.y * h)
+                                        for (i in 1 until stroke.points.size) {
+                                            val pt = stroke.points[i]
+                                            lineTo(pt.x * w, pt.y * h)
+                                        }
+                                    }
+                                    canvas.drawPath(path, paint)
+                                }
+
+                                File(pageEntity.imagePath).outputStream().use { out ->
+                                    annotatedBmp.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                }
+                                annotatedBmp.recycle()
+                            }
+                        }
+                    }
+                    if (doc != null) {
+                        repository.updateDocument(doc)
+                    }
+                } else {
+                    // ── Create new document and retain activeDocumentId ──
+                    val docTitle = if (title.isBlank()) "Annotated_${_uiState.value.pdfTitle}" else title
+                    val doc = repository.createDocument(docTitle)
+                    activeDocumentId = doc.id
+                    val total = _uiState.value.pageCount
+
+                    for (pageIndex in 0 until total) {
+                        val imagePath = getPageImagePath(pageIndex) ?: continue
+                        val strokes = pageStrokesMap[pageIndex] ?: emptyList()
+
+                        val finalFile = repository.createScanImageFile()
+                        if (strokes.isNotEmpty() && File(imagePath).exists()) {
+                            val srcBmp = BitmapFactory.decodeFile(imagePath)
+                            if (srcBmp != null) {
+                                val annotatedBmp = srcBmp.copy(Bitmap.Config.ARGB_8888, true)
+                                srcBmp.recycle()
+
+                                val canvas = android.graphics.Canvas(annotatedBmp)
+                                val w = annotatedBmp.width.toFloat()
+                                val h = annotatedBmp.height.toFloat()
+
+                                strokes.forEach { stroke ->
+                                    if (stroke.points.size < 2) return@forEach
+                                    val paint = android.graphics.Paint().apply {
+                                        color = stroke.color.toArgb()
+                                        strokeWidth = stroke.width * (w / 1080f).coerceAtLeast(1f)
+                                        style = android.graphics.Paint.Style.STROKE
+                                        strokeCap = if (stroke.isHighlighter) android.graphics.Paint.Cap.SQUARE else android.graphics.Paint.Cap.ROUND
+                                        strokeJoin = if (stroke.isHighlighter) android.graphics.Paint.Join.MITER else android.graphics.Paint.Join.ROUND
+                                        isAntiAlias = true
+                                    }
+                                    val path = android.graphics.Path().apply {
+                                        val first = stroke.points.first()
+                                        moveTo(first.x * w, first.y * h)
+                                        for (i in 1 until stroke.points.size) {
+                                            val pt = stroke.points[i]
+                                            lineTo(pt.x * w, pt.y * h)
+                                        }
+                                    }
+                                    canvas.drawPath(path, paint)
+                                }
+
+                                finalFile.outputStream().use { out ->
+                                    annotatedBmp.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                }
+                                annotatedBmp.recycle()
+                            } else {
+                                File(imagePath).copyTo(finalFile, overwrite = true)
+                            }
+                        } else if (File(imagePath).exists()) {
+                            File(imagePath).copyTo(finalFile, overwrite = true)
+                        }
+
+                        repository.addPage(doc.id, finalFile.absolutePath, pageIndex)
+                    }
+                }
+                _uiState.value = _uiState.value.copy(savedToDocuments = true)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
         }
     }
 

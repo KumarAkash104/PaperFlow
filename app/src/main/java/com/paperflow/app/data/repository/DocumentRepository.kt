@@ -166,6 +166,9 @@ class DocumentRepository(context: Context) {
     suspend fun getPagesSync(documentId: String): List<PageEntity> =
         pageDao.getPagesByDocumentSync(documentId)
 
+    suspend fun getPage(pageId: String): PageEntity? =
+        pageDao.getPageById(pageId)
+
     suspend fun addPage(documentId: String, imagePath: String, index: Int): PageEntity {
         val page = PageEntity(
             documentId = documentId,

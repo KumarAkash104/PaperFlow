@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,20 +39,42 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contrast
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewCarousel
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -102,6 +125,26 @@ fun PdfReaderScreen(
     var scale by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
+
+    // Left Annotation Panel state
+    val context = LocalContext.current
+    var showLeftAnnotationPanel by remember { mutableStateOf(false) }
+    var activeTool by remember { mutableStateOf(ReaderAnnotationTool.NONE) }
+    var selectedPenColor by remember { mutableStateOf(Color(0xFFE53935)) } // Red
+    var selectedHighlighterColor by remember { mutableStateOf(Color(0xFFFFD54F)) } // Yellow
+    var penWidth by remember { mutableFloatStateOf(4f) }
+    var highlighterWidth by remember { mutableFloatStateOf(24f) }
+    var pageStrokesMap by remember { mutableStateOf(mapOf<Int, List<ReaderStrokePath>>()) }
+    var showColorPalette by remember { mutableStateOf(false) }
+
+    var showUnsavedDialog by remember { mutableStateOf(false) }
+    var pendingExitAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val hasUnsavedAnnotations = remember(pageStrokesMap) { pageStrokesMap.values.any { it.isNotEmpty() } }
+
+    BackHandler(enabled = hasUnsavedAnnotations) {
+        pendingExitAction = { onBack() }
+        showUnsavedDialog = true
+    }
 
     // Animated brightness overlay
     val brightnessAlpha by animateFloatAsState(
@@ -193,7 +236,7 @@ fun PdfReaderScreen(
                                         offsetY = 0f
                                     }
                                     event.changes.forEach { it.consume() }
-                                } else if (pointerCount == 1 && scale > 1.05f) {
+                                } else if (pointerCount == 1 && scale > 1.05f && activeTool == ReaderAnnotationTool.NONE) {
                                     // Single-finger drag when zoomed: PAN
                                     val pan = event.calculatePan()
                                     if (pan.x != 0f || pan.y != 0f) {
@@ -209,9 +252,14 @@ fun PdfReaderScreen(
                             } while (event.changes.any { it.pressed })
                         }
                     }
-                    // Double-tap: zoom to tap point / reset
+                    // Double-tap: zoom to tap point / reset; Single-tap: hide controls if open
                     .pointerInput(Unit) {
                         detectTapGestures(
+                            onTap = {
+                                if (uiState.showControls) {
+                                    viewModel.hideControls()
+                                }
+                            },
                             onDoubleTap = { tapOffset ->
                                 if (scale > 1.1f) {
                                     // Currently zoomed → reset smoothly
@@ -229,7 +277,6 @@ fun PdfReaderScreen(
                                 } else {
                                     // Zoom to 2.5x centered on tap point smoothly
                                     val targetScale = 2.5f
-                                    // Calculate offset so tap point stays at same screen position
                                     val centerX = size.width / 2f
                                     val centerY = size.height / 2f
                                     var targetOffsetX = (centerX - tapOffset.x) * (targetScale - 1f)
@@ -263,7 +310,7 @@ fun PdfReaderScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = 0.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
-                        userScrollEnabled = scale <= 1.05f
+                        userScrollEnabled = scale <= 1.05f && activeTool == ReaderAnnotationTool.NONE
                     ) {
                         items(uiState.pageCount) { index ->
                             LazyPdfPage(
@@ -273,7 +320,25 @@ fun PdfReaderScreen(
                                 warmth = theme.warmth,
                                 contrast = uiState.contrast,
                                 isDark = theme == ReadingTheme.DARK || theme == ReadingTheme.WARM_DARK,
-                                onSurfaceColor = onSurfaceColor
+                                onSurfaceColor = onSurfaceColor,
+                                strokes = pageStrokesMap[index] ?: emptyList(),
+                                activeTool = if (showLeftAnnotationPanel) activeTool else ReaderAnnotationTool.NONE,
+                                selectedColor = if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) selectedHighlighterColor else selectedPenColor,
+                                penWidth = penWidth,
+                                highlighterWidth = highlighterWidth,
+                                onAddStroke = { stroke ->
+                                    val list = pageStrokesMap[index] ?: emptyList()
+                                    pageStrokesMap = pageStrokesMap + (index to (list + stroke))
+                                },
+                                onEraseAt = { pos ->
+                                    val list = pageStrokesMap[index] ?: emptyList()
+                                    if (list.isNotEmpty()) {
+                                        val updated = list.filterNot { stroke ->
+                                            strokeIntersectsTouch(stroke, pos, 35f)
+                                        }
+                                        pageStrokesMap = pageStrokesMap + (index to updated)
+                                    }
+                                }
                             )
                         }
                     }
@@ -293,7 +358,7 @@ fun PdfReaderScreen(
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = scale <= 1.05f
+                        userScrollEnabled = scale <= 1.05f && activeTool == ReaderAnnotationTool.NONE
                     ) { pageIndex ->
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -306,7 +371,25 @@ fun PdfReaderScreen(
                                 warmth = theme.warmth,
                                 contrast = uiState.contrast,
                                 isDark = theme == ReadingTheme.DARK || theme == ReadingTheme.WARM_DARK,
-                                onSurfaceColor = onSurfaceColor
+                                onSurfaceColor = onSurfaceColor,
+                                strokes = pageStrokesMap[pageIndex] ?: emptyList(),
+                                activeTool = if (showLeftAnnotationPanel) activeTool else ReaderAnnotationTool.NONE,
+                                selectedColor = if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) selectedHighlighterColor else selectedPenColor,
+                                penWidth = penWidth,
+                                highlighterWidth = highlighterWidth,
+                                onAddStroke = { stroke ->
+                                    val list = pageStrokesMap[pageIndex] ?: emptyList()
+                                    pageStrokesMap = pageStrokesMap + (pageIndex to (list + stroke))
+                                },
+                                onEraseAt = { pos ->
+                                    val list = pageStrokesMap[pageIndex] ?: emptyList()
+                                    if (list.isNotEmpty()) {
+                                        val updated = list.filterNot { stroke ->
+                                            strokeIntersectsTouch(stroke, pos, 35f)
+                                        }
+                                        pageStrokesMap = pageStrokesMap + (pageIndex to updated)
+                                    }
+                                }
                             )
                         }
                     }
@@ -327,6 +410,203 @@ fun PdfReaderScreen(
             PaperTextureOverlay(
                 isDark = theme == ReadingTheme.DARK || theme == ReadingTheme.WARM_DARK
             )
+
+            // ── Left Side Premium Collapsible Annotation Panel ──
+            if (!showLeftAnnotationPanel) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 0.dp)
+                        .statusBarsPadding(),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
+                            .background(surfaceColor.copy(alpha = 0.88f))
+                            .border(1.dp, onSurfaceColor.copy(alpha = 0.15f), RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
+                            .clickable {
+                                showLeftAnnotationPanel = true
+                                activeTool = ReaderAnnotationTool.PEN
+                            }
+                            .padding(horizontal = 10.dp, vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Draw,
+                            contentDescription = "Annotate & Highlight",
+                            tint = onSurfaceColor.copy(alpha = 0.9f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            } else {
+                AnimatedVisibility(
+                    visible = showLeftAnnotationPanel,
+                    enter = slideInHorizontally { -it } + fadeIn(tween(250)),
+                    exit = slideOutHorizontally { -it } + fadeOut(tween(200)),
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(surfaceColor.copy(alpha = 0.94f))
+                            .border(1.dp, onSurfaceColor.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Pen
+                        IconButton(
+                            onClick = { activeTool = ReaderAnnotationTool.PEN },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    if (activeTool == ReaderAnnotationTool.PEN) onSurfaceColor.copy(alpha = 0.15f) else Color.Transparent,
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(Icons.Default.Draw, "Pen", tint = if (activeTool == ReaderAnnotationTool.PEN) selectedPenColor else onSurfaceColor.copy(alpha = 0.6f))
+                        }
+
+                        // Highlighter
+                        IconButton(
+                            onClick = { activeTool = ReaderAnnotationTool.HIGHLIGHTER },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) onSurfaceColor.copy(alpha = 0.15f) else Color.Transparent,
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(Icons.Default.BorderColor, "Highlighter", tint = if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) selectedHighlighterColor else onSurfaceColor.copy(alpha = 0.6f))
+                        }
+
+                        // Eraser / Rubber
+                        IconButton(
+                            onClick = { activeTool = ReaderAnnotationTool.ERASER },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    if (activeTool == ReaderAnnotationTool.ERASER) Color(0xFFFF5252).copy(alpha = 0.18f) else Color.Transparent,
+                                    CircleShape
+                                )
+                        ) {
+                            RubberIcon(
+                                tint = if (activeTool == ReaderAnnotationTool.ERASER) Color(0xFFFF5252) else onSurfaceColor.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Color picker swatch
+                        val curColor = if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) selectedHighlighterColor else selectedPenColor
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(curColor)
+                                .border(1.5.dp, onSurfaceColor.copy(alpha = 0.3f), CircleShape)
+                                .clickable { showColorPalette = !showColorPalette }
+                        )
+
+                        if (showColorPalette) {
+                            val colors = if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) listOf(
+                                Color(0xFFFFD54F), // Yellow
+                                Color(0xFF81C784), // Green
+                                Color(0xFFF48FB1), // Pink
+                                Color(0xFF64B5F6), // Blue
+                                Color(0xFFFFB74D)  // Orange
+                            ) else listOf(
+                                Color(0xFFE53935), // Red
+                                Color(0xFF1E88E5), // Blue
+                                Color(0xFF43A047), // Green
+                                Color(0xFF000000), // Black
+                                Color(0xFFFB8C00)  // Orange
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                colors.forEach { c ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .clip(CircleShape)
+                                            .background(c)
+                                            .clickable {
+                                                if (activeTool == ReaderAnnotationTool.HIGHLIGHTER) selectedHighlighterColor = c else selectedPenColor = c
+                                                showColorPalette = false
+                                            }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Undo
+                        IconButton(
+                            onClick = {
+                                val current = pageStrokesMap[uiState.currentPage] ?: emptyList()
+                                if (current.isNotEmpty()) {
+                                    val updated = current.dropLast(1)
+                                    pageStrokesMap = pageStrokesMap + (uiState.currentPage to updated)
+                                }
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Undo, "Undo", tint = onSurfaceColor.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+                        }
+
+                        // Clear
+                        IconButton(
+                            onClick = {
+                                pageStrokesMap = pageStrokesMap + (uiState.currentPage to emptyList())
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, "Clear", tint = onSurfaceColor.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+                        }
+
+                        // Save to Documents section
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    val success = viewModel.saveAnnotatedDocument("", pageStrokesMap)
+                                    if (success) {
+                                        Toast.makeText(context, "Saved annotated document to Documents library!", Toast.LENGTH_SHORT).show()
+                                        showLeftAnnotationPanel = false
+                                        activeTool = ReaderAnnotationTool.NONE
+                                        pageStrokesMap = emptyMap()
+                                    } else {
+                                        Toast.makeText(context, "Failed to save document", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Save, "Save to Documents", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
+
+                        // Close panel
+                        IconButton(
+                            onClick = {
+                                if (hasUnsavedAnnotations) {
+                                    pendingExitAction = {
+                                        showLeftAnnotationPanel = false
+                                        activeTool = ReaderAnnotationTool.NONE
+                                        showColorPalette = false
+                                    }
+                                    showUnsavedDialog = true
+                                } else {
+                                    showLeftAnnotationPanel = false
+                                    activeTool = ReaderAnnotationTool.NONE
+                                    showColorPalette = false
+                                }
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Close, "Close Annotation", tint = onSurfaceColor.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            }
 
             // ── Floating settings button ──
             Box(
@@ -378,7 +658,14 @@ fun PdfReaderScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = {
+                            if (hasUnsavedAnnotations) {
+                                pendingExitAction = { onBack() }
+                                showUnsavedDialog = true
+                            } else {
+                                onBack()
+                            }
+                        }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = onSurfaceColor)
                         }
                         Column(
@@ -430,6 +717,20 @@ fun PdfReaderScreen(
                         }
                     }
                 }
+            }
+
+            // ── Full-screen dismiss scrim when controls panel is open ──
+            if (uiState.showControls) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            viewModel.hideControls()
+                        }
+                )
             }
 
             // ── Bottom controls panel ──
@@ -485,10 +786,163 @@ fun PdfReaderScreen(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                }
             }
         }
     }
+
+    if (showUnsavedDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text("Save Annotations?") },
+            text = { Text("You have unsaved drawings or highlights. Would you like to save them to your Documents section before closing?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUnsavedDialog = false
+                        scope.launch {
+                            val success = viewModel.saveAnnotatedDocument("", pageStrokesMap)
+                            if (success) {
+                                Toast.makeText(context, "Saved to Documents section!", Toast.LENGTH_SHORT).show()
+                            }
+                            pageStrokesMap = emptyMap()
+                            showLeftAnnotationPanel = false
+                            activeTool = ReaderAnnotationTool.NONE
+                            pendingExitAction?.invoke()
+                            pendingExitAction = null
+                        }
+                    }
+                ) {
+                    Text("Save to Documents")
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        onClick = {
+                            showUnsavedDialog = false
+                            pageStrokesMap = emptyMap()
+                            showLeftAnnotationPanel = false
+                            activeTool = ReaderAnnotationTool.NONE
+                            pendingExitAction?.invoke()
+                            pendingExitAction = null
+                        }
+                    ) {
+                        Text("Discard", color = Color.Red)
+                    }
+                    TextButton(onClick = { showUnsavedDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            }
+        )
+    }
+}
+
+enum class ReaderAnnotationTool(val label: String) {
+    NONE("Read Only"),
+    PEN("Pen"),
+    HIGHLIGHTER("Highlighter"),
+    ERASER("Eraser")
+}
+
+@Composable
+fun RubberIcon(
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier.size(20.dp)) {
+        val w = size.width
+        val h = size.height
+
+        // Eraser main body (slanted rubber block)
+        val bodyPath = Path().apply {
+            moveTo(w * 0.20f, h * 0.75f)
+            lineTo(w * 0.65f, h * 0.75f)
+            lineTo(w * 0.85f, h * 0.35f)
+            lineTo(w * 0.40f, h * 0.35f)
+            close()
+        }
+        drawPath(bodyPath, color = tint)
+
+        // Eraser top highlight edge
+        val topHighlight = Path().apply {
+            moveTo(w * 0.40f, h * 0.35f)
+            lineTo(w * 0.85f, h * 0.35f)
+            lineTo(w * 0.70f, h * 0.15f)
+            lineTo(w * 0.25f, h * 0.15f)
+            close()
+        }
+        drawPath(topHighlight, color = tint.copy(alpha = 0.5f))
+
+        // Metallic / paper band wrapper around base
+        val bandPath = Path().apply {
+            moveTo(w * 0.10f, h * 0.90f)
+            lineTo(w * 0.45f, h * 0.90f)
+            lineTo(w * 0.55f, h * 0.70f)
+            lineTo(w * 0.20f, h * 0.70f)
+            close()
+        }
+        drawPath(bandPath, color = tint.copy(alpha = 0.30f))
+        drawPath(bandPath, color = tint, style = Stroke(width = 1.2.dp.toPx()))
+    }
+}
+
+fun distanceToSegmentSq(p: Offset, a: Offset, b: Offset): Float {
+    val l2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)
+    if (l2 == 0f) {
+        val dx = p.x - a.x
+        val dy = p.y - a.y
+        return dx * dx + dy * dy
+    }
+    var t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2
+    t = t.coerceIn(0f, 1f)
+    val projX = a.x + t * (b.x - a.x)
+    val projY = a.y + t * (b.y - a.y)
+    val dx = p.x - projX
+    val dy = p.y - projY
+    return dx * dx + dy * dy
+}
+
+fun strokeIntersectsTouch(stroke: ReaderStrokePath, touchPos: Offset, radiusPx: Float): Boolean {
+    val radiusSq = radiusPx * radiusPx
+    if (stroke.points.size < 2) {
+        val pt = stroke.points.firstOrNull() ?: return false
+        val dx = pt.x - touchPos.x
+        val dy = pt.y - touchPos.y
+        return (dx * dx + dy * dy) <= radiusSq
+    }
+    for (i in 0 until stroke.points.size - 1) {
+        val a = stroke.points[i]
+        val b = stroke.points[i + 1]
+        if (distanceToSegmentSq(touchPos, a, b) <= radiusSq) {
+            return true
+        }
+    }
+    return false
+}
+
+data class ReaderStrokePath(
+    val points: List<Offset>,
+    val color: Color,
+    val width: Float,
+    val isHighlighter: Boolean = false
+)
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReaderStroke(stroke: ReaderStrokePath) {
+    if (stroke.points.size < 2) return
+    val path = Path().apply {
+        moveTo(stroke.points.first().x, stroke.points.first().y)
+        for (i in 1 until stroke.points.size) {
+            lineTo(stroke.points[i].x, stroke.points[i].y)
+        }
+    }
+    val cap = if (stroke.isHighlighter) StrokeCap.Square else StrokeCap.Round
+    val join = if (stroke.isHighlighter) StrokeJoin.Miter else StrokeJoin.Round
+    drawPath(
+        path = path,
+        color = stroke.color,
+        style = Stroke(width = stroke.width, cap = cap, join = join)
+    )
 }
 
 /**
@@ -503,7 +957,14 @@ fun LazyPdfPage(
     warmth: Float,
     contrast: Float,
     isDark: Boolean,
-    onSurfaceColor: Color
+    onSurfaceColor: Color,
+    strokes: List<ReaderStrokePath> = emptyList(),
+    activeTool: ReaderAnnotationTool = ReaderAnnotationTool.NONE,
+    selectedColor: Color = Color(0xFFE53935),
+    penWidth: Float = 4f,
+    highlighterWidth: Float = 24f,
+    onAddStroke: ((ReaderStrokePath) -> Unit)? = null,
+    onEraseAt: ((Offset) -> Unit)? = null
 ) {
     var imagePath by remember(pageIndex) { mutableStateOf<String?>(null) }
     var isLoading by remember(pageIndex) { mutableStateOf(true) }
@@ -522,7 +983,14 @@ fun LazyPdfPage(
             contrast = contrast,
             isDark = isDark,
             pageNumber = pageIndex + 1,
-            onSurfaceColor = onSurfaceColor
+            onSurfaceColor = onSurfaceColor,
+            strokes = strokes,
+            activeTool = activeTool,
+            selectedColor = selectedColor,
+            penWidth = penWidth,
+            highlighterWidth = highlighterWidth,
+            onAddStroke = onAddStroke,
+            onEraseAt = onEraseAt
         )
     } else {
         // Loading placeholder
@@ -553,7 +1021,7 @@ fun LazyPdfPage(
 }
 
 /**
- * A single PDF page rendered with paper-like feel.
+ * A single PDF page rendered with paper-like feel and annotation overlay.
  */
 @Composable
 fun PaperPage(
@@ -563,7 +1031,14 @@ fun PaperPage(
     contrast: Float,
     isDark: Boolean,
     pageNumber: Int,
-    onSurfaceColor: Color
+    onSurfaceColor: Color,
+    strokes: List<ReaderStrokePath> = emptyList(),
+    activeTool: ReaderAnnotationTool = ReaderAnnotationTool.NONE,
+    selectedColor: Color = Color(0xFFE53935),
+    penWidth: Float = 4f,
+    highlighterWidth: Float = 24f,
+    onAddStroke: ((ReaderStrokePath) -> Unit)? = null,
+    onEraseAt: ((Offset) -> Unit)? = null
 ) {
     val colorMatrix = remember(warmth, contrast, isDark) {
         val c = contrast
@@ -601,39 +1076,114 @@ fun PaperPage(
         cm
     }
 
+    var liveDrawingPoints by remember { mutableStateOf(listOf<Offset>()) }
+    var currentEraserPos by remember { mutableStateOf<Offset?>(null) }
+
     Column {
-        AsyncImage(
-            model = File(imagePath),
-            contentDescription = "Page $pageNumber",
-            contentScale = ContentScale.FillWidth,
-            colorFilter = ColorFilter.colorMatrix(colorMatrix),
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .drawWithContent {
-                    drawContent()
-                    val vignetteStrength = if (isDark) 0.12f else 0.06f
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = vignetteStrength)
-                            ),
-                            center = Offset(size.width / 2f, size.height / 2f),
-                            radius = size.maxDimension * 0.75f
+                .pointerInput(activeTool, selectedColor) {
+                    if (activeTool == ReaderAnnotationTool.NONE) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var points = listOf(down.position)
+                        val isErasing = activeTool == ReaderAnnotationTool.ERASER
+
+                        if (isErasing) {
+                            currentEraserPos = down.position
+                            onEraseAt?.invoke(down.position)
+                        } else {
+                            liveDrawingPoints = points
+                        }
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.pressed } ?: break
+                            val pos = change.position
+                            if (isErasing) {
+                                currentEraserPos = pos
+                                onEraseAt?.invoke(pos)
+                            } else {
+                                points = points + pos
+                                liveDrawingPoints = points
+                            }
+                            change.consume()
+                        } while (event.changes.any { it.pressed })
+
+                        if (!isErasing && points.size >= 2) {
+                            val isHighlighter = activeTool == ReaderAnnotationTool.HIGHLIGHTER
+                            val c = if (isHighlighter) selectedColor.copy(alpha = 0.38f) else selectedColor
+                            val w = if (isHighlighter) highlighterWidth else penWidth
+                            onAddStroke?.invoke(ReaderStrokePath(points, c, w, isHighlighter))
+                        }
+                        liveDrawingPoints = emptyList()
+                        currentEraserPos = null
+                    }
+                }
+        ) {
+            AsyncImage(
+                model = File(imagePath),
+                contentDescription = "Page $pageNumber",
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.colorMatrix(colorMatrix),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawWithContent {
+                        drawContent()
+                        val vignetteStrength = if (isDark) 0.12f else 0.06f
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = vignetteStrength)
+                                ),
+                                center = Offset(size.width / 2f, size.height / 2f),
+                                radius = size.maxDimension * 0.75f
+                            )
                         )
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.05f),
+                                    Color.Transparent
+                                ),
+                                startX = 0f,
+                                endX = size.width * 0.03f
+                            )
+                        )
+                    }
+            )
+
+            // Annotation Canvas Overlay
+            Canvas(modifier = Modifier.matchParentSize()) {
+                strokes.forEach { stroke ->
+                    drawReaderStroke(stroke)
+                }
+                if (liveDrawingPoints.size >= 2 && activeTool != ReaderAnnotationTool.ERASER) {
+                    val isHighlighter = activeTool == ReaderAnnotationTool.HIGHLIGHTER
+                    val c = if (isHighlighter) selectedColor.copy(alpha = 0.38f) else selectedColor
+                    val w = if (isHighlighter) highlighterWidth else penWidth
+                    drawReaderStroke(ReaderStrokePath(liveDrawingPoints, c, w, isHighlighter))
+                }
+                // Draw active rubber / eraser touch circle indicator
+                if (activeTool == ReaderAnnotationTool.ERASER && currentEraserPos != null) {
+                    val pos = currentEraserPos!!
+                    drawCircle(
+                        color = Color(0xFFFF5252).copy(alpha = 0.45f),
+                        radius = 28.dp.toPx(),
+                        center = pos,
+                        style = Stroke(width = 2.dp.toPx())
                     )
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.05f),
-                                Color.Transparent
-                            ),
-                            startX = 0f,
-                            endX = size.width * 0.03f
-                        )
+                    drawCircle(
+                        color = Color(0xFFFF5252).copy(alpha = 0.15f),
+                        radius = 28.dp.toPx(),
+                        center = pos
                     )
                 }
-        )
+            }
+        }
+
         Text(
             text = "$pageNumber",
             color = onSurfaceColor.copy(alpha = 0.25f),
@@ -707,6 +1257,13 @@ fun ReaderControlPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, dragAmount ->
+                    if (dragAmount > 15f) {
+                        onDismiss()
+                    }
+                }
+            }
             .background(
                 surfaceColor.copy(alpha = 0.97f),
                 RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
@@ -720,9 +1277,9 @@ fun ReaderControlPanel(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             Box(
                 modifier = Modifier
-                    .width(40.dp).height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(onSurfaceColor.copy(alpha = 0.25f))
+                    .width(44.dp).height(5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(onSurfaceColor.copy(alpha = 0.3f))
                     .clickable { onDismiss() }
             )
         }

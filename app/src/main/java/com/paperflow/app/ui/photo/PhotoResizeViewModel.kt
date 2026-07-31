@@ -3,7 +3,9 @@ package com.paperflow.app.ui.photo
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paperflow.app.data.repository.PhotoRepository
@@ -49,6 +51,9 @@ class PhotoResizeViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessing = true, error = null)
             try {
+                currentSourceBitmap?.recycle()
+                currentSourceBitmap = null
+
                 val stream = appContext.contentResolver.openInputStream(uri)
                 val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeStream(stream, null, options)
@@ -63,17 +68,17 @@ class PhotoResizeViewModel(
 
                 val stream2 = appContext.contentResolver.openInputStream(uri)
                 val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-                val bitmap = BitmapFactory.decodeStream(stream2, null, decodeOpts)
+                var rawBitmap = BitmapFactory.decodeStream(stream2, null, decodeOpts)
                 stream2?.close()
 
-                if (bitmap == null) {
+                if (rawBitmap == null) {
                     _uiState.value = _uiState.value.copy(isProcessing = false, error = "Failed to load image")
                     return@launch
                 }
 
+                val bitmap = applyExifRotation(rawBitmap, uri)
                 currentSourceBitmap = bitmap
                 
-                // Get file size if it's a file uri
                 var fileSize: Long = 0
                 try {
                     appContext.contentResolver.openAssetFileDescriptor(uri, "r")?.use {
@@ -86,13 +91,13 @@ class PhotoResizeViewModel(
                 _uiState.value = _uiState.value.copy(
                     originalUri = uri,
                     isProcessing = false,
-                    originalWidth = options.outWidth,
-                    originalHeight = options.outHeight,
+                    originalWidth = bitmap.width,
+                    originalHeight = bitmap.height,
                     originalSize = fileSize,
-                    inputWidth = options.outWidth.toString(),
-                    inputHeight = options.outHeight.toString(),
-                    resizedWidth = options.outWidth,
-                    resizedHeight = options.outHeight,
+                    inputWidth = bitmap.width.toString(),
+                    inputHeight = bitmap.height.toString(),
+                    resizedWidth = bitmap.width,
+                    resizedHeight = bitmap.height,
                     resizedSize = fileSize
                 )
             } catch (e: Exception) {
@@ -102,17 +107,39 @@ class PhotoResizeViewModel(
         }
     }
 
+    private fun applyExifRotation(bitmap: Bitmap, uri: Uri): Bitmap {
+        return try {
+            appContext.contentResolver.openInputStream(uri)?.use { stream ->
+                val exif = ExifInterface(stream)
+                val orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
+                val matrix = Matrix()
+                when (orientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                    ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                    ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                    ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+                    ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+                    else -> return bitmap
+                }
+                val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                if (rotated !== bitmap) bitmap.recycle()
+                rotated
+            } ?: bitmap
+        } catch (_: Exception) {
+            bitmap
+        }
+    }
+
     fun onWidthChanged(widthStr: String) {
         val oldState = _uiState.value
-        if (oldState.lockAspectRatio && widthStr.isNotEmpty() && oldState.originalWidth > 0) {
-            try {
-                val w = widthStr.toInt()
-                val ratio = oldState.originalHeight.toFloat() / oldState.originalWidth.toFloat()
-                val h = (w * ratio).toInt()
-                _uiState.value = oldState.copy(inputWidth = widthStr, inputHeight = h.toString())
-            } catch (_: Exception) {
-                _uiState.value = oldState.copy(inputWidth = widthStr)
-            }
+        val w = widthStr.toIntOrNull()
+        if (oldState.lockAspectRatio && w != null && w > 0 && oldState.originalWidth > 0) {
+            val ratio = oldState.originalHeight.toFloat() / oldState.originalWidth.toFloat()
+            val h = (w * ratio).toInt().coerceAtLeast(1)
+            _uiState.value = oldState.copy(inputWidth = widthStr, inputHeight = h.toString())
         } else {
             _uiState.value = oldState.copy(inputWidth = widthStr)
         }
@@ -120,15 +147,11 @@ class PhotoResizeViewModel(
 
     fun onHeightChanged(heightStr: String) {
         val oldState = _uiState.value
-        if (oldState.lockAspectRatio && heightStr.isNotEmpty() && oldState.originalHeight > 0) {
-            try {
-                val h = heightStr.toInt()
-                val ratio = oldState.originalWidth.toFloat() / oldState.originalHeight.toFloat()
-                val w = (h * ratio).toInt()
-                _uiState.value = oldState.copy(inputHeight = heightStr, inputWidth = w.toString())
-            } catch (_: Exception) {
-                _uiState.value = oldState.copy(inputHeight = heightStr)
-            }
+        val h = heightStr.toIntOrNull()
+        if (oldState.lockAspectRatio && h != null && h > 0 && oldState.originalHeight > 0) {
+            val ratio = oldState.originalWidth.toFloat() / oldState.originalHeight.toFloat()
+            val w = (h * ratio).toInt().coerceAtLeast(1)
+            _uiState.value = oldState.copy(inputHeight = heightStr, inputWidth = w.toString())
         } else {
             _uiState.value = oldState.copy(inputHeight = heightStr)
         }
@@ -149,24 +172,22 @@ class PhotoResizeViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessing = true, error = null)
             try {
-                val targetW = state.inputWidth.toIntOrNull() ?: state.originalWidth
-                val targetH = state.inputHeight.toIntOrNull() ?: state.originalHeight
+                val targetW = (state.inputWidth.toIntOrNull() ?: state.originalWidth).coerceAtLeast(1)
+                val targetH = (state.inputHeight.toIntOrNull() ?: state.originalHeight).coerceAtLeast(1)
                 val targetSizeKb = state.inputTargetSizeKb.toIntOrNull()
 
                 withContext(Dispatchers.IO) {
-                    // Step 1: Scale the bitmap
-                    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
-                    
-                    // Step 2: Quality Compression Search
-                    var quality = 90
+                    var currentW = targetW
+                    var currentH = targetH
+                    var scaledBitmap = Bitmap.createScaledBitmap(bitmap, currentW, currentH, true)
                     var resultBytes = ByteArray(0)
-                    
+
                     if (targetSizeKb != null && targetSizeKb > 0) {
                         val maxBytes = targetSizeKb * 1024
-                        
-                        // Binary search for JPEG quality
-                        var low = 5
-                        var high = 100
+
+                        // Tier 1: Try binary search quality (10..95) on the target dimensions
+                        var low = 10
+                        var high = 95
                         var bestQuality = 90
                         var bestBytes = ByteArray(0)
 
@@ -179,21 +200,45 @@ class PhotoResizeViewModel(
                             if (bytes.size <= maxBytes) {
                                 bestQuality = mid
                                 bestBytes = bytes
-                                low = mid + 1 // try higher quality
+                                low = mid + 1
                             } else {
-                                high = mid - 1 // must lower quality
+                                high = mid - 1
                             }
                         }
-                        
-                        quality = bestQuality
-                        resultBytes = if (bestBytes.isNotEmpty()) bestBytes else {
-                            // Fallback if target size is impossibly small
-                            val outStream = ByteArrayOutputStream()
-                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 5, outStream)
-                            outStream.toByteArray()
+
+                        if (bestBytes.isNotEmpty()) {
+                            resultBytes = bestBytes
+                        } else {
+                            // Tier 2: Quality=10 is still too large. Iteratively downscale dimensions until under target KB.
+                            var curScaleBmp = scaledBitmap
+                            var q = 15
+                            while (currentW > 50 && currentH > 50) {
+                                currentW = (currentW * 0.85f).toInt().coerceAtLeast(50)
+                                currentH = (currentH * 0.85f).toInt().coerceAtLeast(50)
+                                val nextBmp = Bitmap.createScaledBitmap(curScaleBmp, currentW, currentH, true)
+                                if (curScaleBmp !== scaledBitmap && curScaleBmp !== bitmap) {
+                                    curScaleBmp.recycle()
+                                }
+                                curScaleBmp = nextBmp
+
+                                val outStream = ByteArrayOutputStream()
+                                curScaleBmp.compress(Bitmap.CompressFormat.JPEG, q, outStream)
+                                val bytes = outStream.toByteArray()
+                                if (bytes.size <= maxBytes) {
+                                    resultBytes = bytes
+                                    break
+                                }
+                            }
+                            if (resultBytes.isEmpty()) {
+                                val outStream = ByteArrayOutputStream()
+                                curScaleBmp.compress(Bitmap.CompressFormat.JPEG, 10, outStream)
+                                resultBytes = outStream.toByteArray()
+                            }
+                            if (curScaleBmp !== scaledBitmap && curScaleBmp !== bitmap) {
+                                curScaleBmp.recycle()
+                            }
                         }
                     } else {
-                        // Standard compression
                         val outStream = ByteArrayOutputStream()
                         scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 90, outStream)
                         resultBytes = outStream.toByteArray()
@@ -205,15 +250,15 @@ class PhotoResizeViewModel(
                         fos.write(resultBytes)
                     }
 
-                    if (scaledBitmap != bitmap) {
+                    if (scaledBitmap !== bitmap) {
                         scaledBitmap.recycle()
                     }
 
                     withContext(Dispatchers.Main) {
                         _uiState.value = _uiState.value.copy(
                             isProcessing = false,
-                            resizedWidth = targetW,
-                            resizedHeight = targetH,
+                            resizedWidth = currentW,
+                            resizedHeight = currentH,
                             resizedSize = resultBytes.size.toLong(),
                             previewPath = previewFile.absolutePath
                         )
@@ -258,6 +303,8 @@ class PhotoResizeViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        currentSourceBitmap?.recycle()
         currentSourceBitmap = null
     }
 }
+

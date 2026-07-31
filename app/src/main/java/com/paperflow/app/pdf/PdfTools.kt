@@ -40,61 +40,80 @@ object PdfTools {
         if (!outputDir.exists()) outputDir.mkdirs()
         val doc = PDDocument.load(inputFile)
         val results = mutableListOf<File>()
+        try {
+            val splitRanges = ranges ?: (0 until doc.numberOfPages).map { it..it }
 
-        val splitRanges = ranges ?: (0 until doc.numberOfPages).map { it..it }
-
-        splitRanges.forEachIndexed { idx, range ->
-            val newDoc = PDDocument()
-            for (pageIdx in range) {
-                if (pageIdx < doc.numberOfPages) {
-                    newDoc.addPage(doc.getPage(pageIdx))
+            splitRanges.forEachIndexed { idx, range ->
+                val newDoc = PDDocument()
+                try {
+                    for (pageIdx in range) {
+                        if (pageIdx < doc.numberOfPages) {
+                            newDoc.addPage(doc.getPage(pageIdx))
+                        }
+                    }
+                    val outFile = File(outputDir, "split_${idx + 1}.pdf")
+                    newDoc.save(outFile)
+                    results.add(outFile)
+                } finally {
+                    newDoc.close()
                 }
             }
-            val outFile = File(outputDir, "split_${idx + 1}.pdf")
-            newDoc.save(outFile)
-            newDoc.close()
-            results.add(outFile)
+        } finally {
+            doc.close()
         }
-        doc.close()
         return results
     }
 
     /** Rearrange pages in a PDF given new order (0-indexed). */
     fun rearrangePages(inputFile: File, outputFile: File, newOrder: List<Int>): File {
         val doc = PDDocument.load(inputFile)
-        val newDoc = PDDocument()
-        newOrder.forEach { pageIdx ->
-            if (pageIdx < doc.numberOfPages) {
-                newDoc.importPage(doc.getPage(pageIdx))
+        try {
+            val newDoc = PDDocument()
+            try {
+                newOrder.forEach { pageIdx ->
+                    if (pageIdx < doc.numberOfPages) {
+                        newDoc.importPage(doc.getPage(pageIdx))
+                    }
+                }
+                newDoc.save(outputFile)
+            } finally {
+                newDoc.close()
             }
+        } finally {
+            doc.close()
         }
-        newDoc.save(outputFile)
-        newDoc.close()
-        doc.close()
         return outputFile
     }
 
     /** Delete specific pages from a PDF (0-indexed). */
     fun deletePages(inputFile: File, outputFile: File, pagesToDelete: Set<Int>): File {
         val doc = PDDocument.load(inputFile)
-        val newDoc = PDDocument()
-        for (i in 0 until doc.numberOfPages) {
-            if (i !in pagesToDelete) {
-                newDoc.importPage(doc.getPage(i))
+        try {
+            val newDoc = PDDocument()
+            try {
+                for (i in 0 until doc.numberOfPages) {
+                    if (i !in pagesToDelete) {
+                        newDoc.importPage(doc.getPage(i))
+                    }
+                }
+                newDoc.save(outputFile)
+            } finally {
+                newDoc.close()
             }
+        } finally {
+            doc.close()
         }
-        newDoc.save(outputFile)
-        newDoc.close()
-        doc.close()
         return outputFile
     }
 
     /** Get page count of a PDF file. */
     fun getPageCount(file: File): Int {
         val doc = PDDocument.load(file)
-        val count = doc.numberOfPages
-        doc.close()
-        return count
+        return try {
+            doc.numberOfPages
+        } finally {
+            doc.close()
+        }
     }
 
     /**
@@ -244,27 +263,43 @@ object PdfTools {
                     val absW = overlay.widthFraction * pageWidth
                     val absH = overlay.heightFraction * pageHeight
 
-                    // 1. Vector Whiteout
+                    // 1. Vector Whiteout / Mask
                     if (overlay.whiteout) {
-                        contentStream.setNonStrokingColor(1f, 1f, 1f)
+                        val c = android.graphics.Color.valueOf(if (overlay.type == OverlayType.WHITEOUT_MASK) overlay.color else android.graphics.Color.WHITE)
+                        contentStream.setNonStrokingColor(c.red(), c.green(), c.blue())
                         contentStream.addRect(absX - 1.5f, absY - 1.5f, absW + 3f, absH + 3f)
                         contentStream.fill()
                     }
 
                     // 2. Vector Text
                     if (overlay.text.isNotEmpty()) {
-                        contentStream.beginText()
-                        
-                        val font = getStandardFont(overlay.fontName, overlay.isBold, overlay.isItalic)
-                        contentStream.setFont(font, overlay.fontSize)
+                        try {
+                            contentStream.beginText()
+                            val font = getStandardFont(overlay.fontName, overlay.isBold, overlay.isItalic)
+                            contentStream.setFont(font, overlay.fontSize)
 
-                        val color = android.graphics.Color.valueOf(overlay.color)
-                        contentStream.setNonStrokingColor(color.red(), color.green(), color.blue())
+                            val color = android.graphics.Color.valueOf(overlay.color)
+                            contentStream.setNonStrokingColor(color.red(), color.green(), color.blue())
 
-                        // Position text baseline (approx absY + 15% of height for perfect alignment)
-                        contentStream.newLineAtOffset(absX, absY + (absH * 0.15f))
-                        contentStream.showText(overlay.text)
-                        contentStream.endText()
+                            val safeText = sanitizeWinAnsiText(font, overlay.text)
+                            // Position text baseline (approx absY + 15% of height for perfect alignment)
+                            contentStream.newLineAtOffset(absX, absY + (absH * 0.15f))
+                            contentStream.showText(safeText)
+                            contentStream.endText()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    // 3. Signature & Image Overlay
+                    if (overlay.imagePath != null && File(overlay.imagePath).exists()) {
+                        try {
+                            val imgFile = File(overlay.imagePath)
+                            val pdImage = com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromFileByExtension(imgFile, doc)
+                            contentStream.drawImage(pdImage, absX, absY, absW, absH)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
                 contentStream.close()
@@ -273,6 +308,19 @@ object PdfTools {
         } finally {
             doc.close()
         }
+    }
+
+    private fun sanitizeWinAnsiText(font: PDType1Font, text: String): String {
+        val sb = StringBuilder()
+        for (ch in text) {
+            try {
+                font.encode(ch.toString())
+                sb.append(ch)
+            } catch (_: Exception) {
+                sb.append('?')
+            }
+        }
+        return sb.toString()
     }
 
     private fun getStandardFont(fontCategory: String, isBold: Boolean, isItalic: Boolean): PDType1Font {

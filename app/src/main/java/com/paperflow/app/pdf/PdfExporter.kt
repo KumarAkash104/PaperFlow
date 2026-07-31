@@ -34,71 +34,73 @@ object PdfExporter {
     ): File {
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context.applicationContext)
         val document = com.tom_roush.pdfbox.pdmodel.PDDocument()
+        try {
+            imagePaths.forEachIndexed { index, path ->
+                try {
+                    // Load image at max 2000px dimension to avoid OOM while preserving high PDF quality
+                    val bitmap = ImageProcessor.loadBitmap(path, maxDim = 2000)
+                    if (bitmap == null) return@forEachIndexed
 
-        imagePaths.forEachIndexed { index, path ->
-            try {
-                // Load image to get dimensions for AUTO page size
-                val bitmap = ImageProcessor.loadBitmap(path)
-                if (bitmap == null) return@forEachIndexed
-
-                // Determine page dimensions
-                val pageRect = when (pageSize) {
-                    PageSize.AUTO -> {
-                        // Fit page to image at 72 DPI (points = pixels at 72 DPI)
-                        val imgW = bitmap.width.toFloat()
-                        val imgH = bitmap.height.toFloat()
-                        // Cap to A4 max dimensions but preserve aspect ratio
-                        val maxW = 595f; val maxH = 842f
-                        val scale = minOf(maxW / imgW, maxH / imgH, 1f)
-                        com.tom_roush.pdfbox.pdmodel.common.PDRectangle(imgW * scale, imgH * scale)
+                    // Determine page dimensions
+                    val pageRect = when (pageSize) {
+                        PageSize.AUTO -> {
+                            val imgW = bitmap.width.toFloat()
+                            val imgH = bitmap.height.toFloat()
+                            val maxW = 595f; val maxH = 842f
+                            val scale = minOf(maxW / imgW, maxH / imgH, 1f)
+                            com.tom_roush.pdfbox.pdmodel.common.PDRectangle(imgW * scale, imgH * scale)
+                        }
+                        PageSize.A4 -> com.tom_roush.pdfbox.pdmodel.common.PDRectangle.A4
+                        PageSize.LETTER -> com.tom_roush.pdfbox.pdmodel.common.PDRectangle.LETTER
+                        PageSize.LEGAL -> com.tom_roush.pdfbox.pdmodel.common.PDRectangle.LEGAL
                     }
-                    PageSize.A4 -> com.tom_roush.pdfbox.pdmodel.common.PDRectangle.A4
-                    PageSize.LETTER -> com.tom_roush.pdfbox.pdmodel.common.PDRectangle.LETTER
-                    PageSize.LEGAL -> com.tom_roush.pdfbox.pdmodel.common.PDRectangle.LEGAL
+
+                    val page = com.tom_roush.pdfbox.pdmodel.PDPage(pageRect)
+                    document.addPage(page)
+
+                    // Encode bitmap with the specified quality
+                    val pdImage = com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory.createFromImage(
+                        document, bitmap, quality.jpegQuality.toFloat() / 100f
+                    )
+                    bitmap.recycle()
+
+                    val contentStream = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(document, page)
+                    try {
+                        val pw = page.mediaBox.width
+                        val ph = page.mediaBox.height
+
+                        val margin = if (pageSize == PageSize.AUTO) 0f else 20f
+                        val drawW = pw - margin * 2
+                        val drawH = ph - margin * 2
+
+                        val imgW = pdImage.width.toFloat()
+                        val imgH = pdImage.height.toFloat()
+
+                        val imgAspect = imgW / imgH
+                        val pageAspect = drawW / drawH
+
+                        val (dstW, dstH) = if (imgAspect > pageAspect) {
+                            drawW to (drawW / imgAspect)
+                        } else {
+                            (drawH * imgAspect) to drawH
+                        }
+
+                        val left = margin + (drawW - dstW) / 2
+                        val top = margin + (drawH - dstH) / 2
+
+                        contentStream.drawImage(pdImage, left, top, dstW, dstH)
+                    } finally {
+                        contentStream.close()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-
-                val page = com.tom_roush.pdfbox.pdmodel.PDPage(pageRect)
-                document.addPage(page)
-
-                // Encode bitmap with the specified quality
-                val pdImage = com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory.createFromImage(
-                    document, bitmap, quality.jpegQuality.toFloat() / 100f
-                )
-                bitmap.recycle()
-
-                val contentStream = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(document, page)
-
-                val pw = page.mediaBox.width
-                val ph = page.mediaBox.height
-
-                val margin = if (pageSize == PageSize.AUTO) 0f else 20f
-                val drawW = pw - margin * 2
-                val drawH = ph - margin * 2
-
-                val imgW = pdImage.width.toFloat()
-                val imgH = pdImage.height.toFloat()
-
-                val imgAspect = imgW / imgH
-                val pageAspect = drawW / drawH
-
-                val (dstW, dstH) = if (imgAspect > pageAspect) {
-                    drawW to (drawW / imgAspect)
-                } else {
-                    (drawH * imgAspect) to drawH
-                }
-
-                val left = margin + (drawW - dstW) / 2
-                val top = margin + (drawH - dstH) / 2
-
-                contentStream.drawImage(pdImage, left, top, dstW, dstH)
-                contentStream.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
-        }
 
-        document.save(outputFile)
-        document.close()
+            document.save(outputFile)
+        } finally {
+            document.close()
+        }
         return outputFile
     }
 

@@ -26,6 +26,7 @@ data class ExportUiState(
     val quality: ExportQuality = ExportQuality.BALANCED,
     val isExporting: Boolean = false,
     val exportedFile: File? = null,
+    val exportedFiles: List<File> = emptyList(),
     val error: String? = null,
 )
 
@@ -48,8 +49,8 @@ class ExportViewModel(
         val defaultPageSizeStr = prefs.getString("default_page_size", PageSize.A4.name)
         val defaultQualityStr = prefs.getString("default_quality", ExportQuality.BALANCED.name)
         
-        val defaultPageSize = PageSize.values().find { it.name == defaultPageSizeStr } ?: PageSize.A4
-        val defaultQuality = ExportQuality.values().find { it.name == defaultQualityStr } ?: ExportQuality.BALANCED
+        val defaultPageSize = PageSize.entries.find { it.name == defaultPageSizeStr } ?: PageSize.A4
+        val defaultQuality = ExportQuality.entries.find { it.name == defaultQualityStr } ?: ExportQuality.BALANCED
 
         viewModelScope.launch {
             val doc = repository.getDocument(documentId) ?: return@launch
@@ -88,22 +89,28 @@ class ExportViewModel(
                     .replace(Regex("[^a-zA-Z0-9_\\- ]"), "")
                     .replace(" ", "_")
 
-                val file = withContext(Dispatchers.IO) {
+                val (mainFile, allFiles) = withContext(Dispatchers.IO) {
                     when (state.format) {
                         ExportFormat.PDF -> {
                             val outFile = PdfExporter.createExportFile(appContext, title, "pdf")
-                            PdfExporter.exportToPdf(
+                            val exported = PdfExporter.exportToPdf(
                                 appContext, paths, state.pageSize, state.quality, outFile,
                             )
+                            exported to listOf(exported)
                         }
                         ExportFormat.JPG -> {
                             val dir = File(appContext.cacheDir, "exports/$title")
                             val files = PdfExporter.exportToImages(paths, state.quality, dir)
-                            files.firstOrNull() ?: throw Exception("No pages to export")
+                            if (files.isEmpty()) throw Exception("No pages to export")
+                            files.first() to files
                         }
                     }
                 }
-                _uiState.value = _uiState.value.copy(isExporting = false, exportedFile = file)
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportedFile = mainFile,
+                    exportedFiles = allFiles,
+                )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
@@ -114,17 +121,38 @@ class ExportViewModel(
     }
 
     fun shareFile(context: Context) {
-        val file = _uiState.value.exportedFile ?: return
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file,
-        )
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = if (_uiState.value.format == ExportFormat.PDF) "application/pdf" else "image/jpeg"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val files = _uiState.value.exportedFiles.ifEmpty {
+            listOfNotNull(_uiState.value.exportedFile)
         }
-        context.startActivity(Intent.createChooser(intent, "Share via"))
+        if (files.isEmpty()) return
+
+        if (files.size == 1) {
+            val file = files.first()
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
+            )
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = if (_uiState.value.format == ExportFormat.PDF) "application/pdf" else "image/jpeg"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share via"))
+        } else {
+            val uris = ArrayList(files.map { file ->
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file,
+                )
+            })
+            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "image/jpeg"
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share images via"))
+        }
     }
 }

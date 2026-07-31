@@ -6,33 +6,39 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paperflow.app.data.repository.DocumentRepository
+import com.paperflow.app.pdf.OverlayType
 import com.paperflow.app.pdf.PdfEditOverlay
 import com.paperflow.app.pdf.PdfImporter
 import com.paperflow.app.pdf.PdfTextBlock
 import com.paperflow.app.pdf.PdfTextExtractor
 import com.paperflow.app.pdf.PdfTools
-import com.paperflow.app.data.repository.DocumentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
-data class PdfPageData(
+data class PdfPageMeta(
     val index: Int,
-    val imagePath: String,
     val width: Float,
-    val height: Float
+    val height: Float,
+    val rotation: Int = 0
 )
 
 data class PdfEditorUiState(
     val isProcessing: Boolean = false,
     val pdfTitle: String = "",
-    val pages: List<PdfPageData> = emptyList(),
-    val extractedBlocks: List<PdfTextBlock> = emptyList(),
+    val totalPageCount: Int = 0,
+    val activePageIndex: Int = 0,
+    val pagesMeta: List<PdfPageMeta> = emptyList(),
+    val activePageBlocks: List<PdfTextBlock> = emptyList(),
     val overlays: List<PdfEditOverlay> = emptyList(),
     val selectedOverlayId: String? = null,
     val isSaving: Boolean = false,
@@ -49,11 +55,21 @@ class PdfEditorViewModel(
     private val _uiState = MutableStateFlow(PdfEditorUiState())
     val uiState: StateFlow<PdfEditorUiState> = _uiState.asStateFlow()
 
-    init {
-        loadPdf()
+    private val highResCache = LinkedHashMap<Int, String>(5, 0.75f, true)
+    private val thumbCache = ConcurrentHashMap<Int, String>()
+    private val pageBlocksCache = ConcurrentHashMap<Int, List<PdfTextBlock>>()
+    private val renderMutex = Mutex()
+
+    private val cacheDir by lazy {
+        File(appContext.cacheDir, "pdf_editor_cache").also { if (!it.exists()) it.mkdirs() }
     }
 
-    private fun loadPdf() {
+    init {
+        loadPdfQuick()
+    }
+
+    /** Instant load: read page count & dimensions in < 50ms without batch rendering all pages. */
+    private fun loadPdfQuick() {
         viewModelScope.launch {
             _uiState.value = PdfEditorUiState(isProcessing = true, pdfTitle = File(pdfPath).name)
             try {
@@ -63,24 +79,21 @@ class PdfEditorViewModel(
                     return@launch
                 }
 
-                // Initialize PDFBox
                 PdfTools.init(appContext)
 
-                // 1. Render and cache pages
-                val pages = withContext(Dispatchers.IO) {
-                    renderAndCachePages(file)
-                }
-
-                // 2. Extract text blocks in the background
-                val blocks = withContext(Dispatchers.IO) {
-                    PdfTextExtractor.extractTextFromPdf(file)
+                val metaList = withContext(Dispatchers.IO) {
+                    readPageMetaList(file)
                 }
 
                 _uiState.value = _uiState.value.copy(
                     isProcessing = false,
-                    pages = pages,
-                    extractedBlocks = blocks
+                    totalPageCount = metaList.size,
+                    pagesMeta = metaList,
+                    activePageIndex = 0
                 )
+
+                // Lazily load text for page 0
+                loadActivePageText(0)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
@@ -91,78 +104,139 @@ class PdfEditorViewModel(
         }
     }
 
-    private fun renderAndCachePages(file: File): List<PdfPageData> {
-        val results = mutableListOf<PdfPageData>()
+    private fun readPageMetaList(file: File): List<PdfPageMeta> {
+        val list = mutableListOf<PdfPageMeta>()
         var fd: ParcelFileDescriptor? = null
         var renderer: PdfRenderer? = null
         try {
             fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
             renderer = PdfRenderer(fd)
-            val cacheDir = File(appContext.cacheDir, "pdf_editor_cache")
-            if (!cacheDir.exists()) cacheDir.mkdirs()
-
             for (i in 0 until renderer.pageCount) {
-                val page = renderer.openPage(i)
-                
-                // render at high-res (300 dpi, max 3500px)
-                val densityDpi = 300
-                var targetWidth = (page.width * densityDpi / 72.0).toInt()
-                var targetHeight = (page.height * densityDpi / 72.0).toInt()
-                val maxDim = maxOf(targetWidth, targetHeight)
-                if (maxDim > 3500) {
-                    val scale = 3500.0 / maxDim
-                    targetWidth = (targetWidth * scale).toInt()
-                    targetHeight = (targetHeight * scale).toInt()
-                }
-
-                val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-                if (bitmap == null) {
-                    page.close()
-                    continue
-                }
-
-                val pageFile = File(cacheDir, "page_${file.name.hashCode()}_$i.jpg")
-                pageFile.outputStream().use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                }
-                bitmap.recycle()
-
-                results.add(
-                    PdfPageData(
-                        index = i,
-                        imagePath = pageFile.absolutePath,
-                        width = page.width.toFloat(),
-                        height = page.height.toFloat()
-                    )
-                )
-                page.close()
+                val p = renderer.openPage(i)
+                list.add(PdfPageMeta(index = i, width = p.width.toFloat(), height = p.height.toFloat()))
+                p.close()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         } finally {
             renderer?.close()
             fd?.close()
         }
-        return results
+        return list
+    }
+
+    fun setActivePage(pageIndex: Int) {
+        val total = _uiState.value.totalPageCount
+        if (pageIndex < 0 || pageIndex >= total) return
+        _uiState.value = _uiState.value.copy(activePageIndex = pageIndex, selectedOverlayId = null)
+        loadActivePageText(pageIndex)
+    }
+
+    private fun loadActivePageText(pageIndex: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val cached = pageBlocksCache[pageIndex]
+            if (cached != null) {
+                _uiState.value = _uiState.value.copy(activePageBlocks = cached)
+                return@launch
+            }
+
+            val file = File(pdfPath)
+            if (!file.exists()) return@launch
+            val blocks = PdfTextExtractor.extractTextFromPage(file, pageIndex)
+            pageBlocksCache[pageIndex] = blocks
+
+            if (_uiState.value.activePageIndex == pageIndex) {
+                _uiState.value = _uiState.value.copy(activePageBlocks = blocks)
+            }
+        }
+    }
+
+    suspend fun getPageHighResPath(pageIndex: Int): String? {
+        return withContext(Dispatchers.IO) {
+            renderMutex.withLock {
+                highResCache[pageIndex]?.let { path ->
+                    if (File(path).exists()) return@withContext path
+                }
+                while (highResCache.size >= 5) {
+                    val oldest = highResCache.entries.first()
+                    try { File(oldest.value).delete() } catch (_: Exception) {}
+                    highResCache.remove(oldest.key)
+                }
+                val rendered = renderPageBitmap(pageIndex, densityDpi = 300, maxDim = 3200)
+                if (rendered != null) highResCache[pageIndex] = rendered
+                rendered
+            }
+        }
+    }
+
+    suspend fun getPageThumbnailPath(pageIndex: Int): String? {
+        return withContext(Dispatchers.IO) {
+            thumbCache[pageIndex]?.let { path ->
+                if (File(path).exists()) return@withContext path
+            }
+            val rendered = renderPageBitmap(pageIndex, densityDpi = 100, maxDim = 600)
+            if (rendered != null) thumbCache[pageIndex] = rendered
+            rendered
+        }
+    }
+
+    private fun renderPageBitmap(pageIndex: Int, densityDpi: Int, maxDim: Int): String? {
+        val file = File(pdfPath)
+        if (!file.exists()) return null
+
+        var fd: ParcelFileDescriptor? = null
+        var renderer: PdfRenderer? = null
+        try {
+            fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+            renderer = PdfRenderer(fd)
+            if (pageIndex >= renderer.pageCount) return null
+
+            val page = renderer.openPage(pageIndex)
+            var targetWidth = (page.width * densityDpi / 72.0).toInt()
+            var targetHeight = (page.height * densityDpi / 72.0).toInt()
+            val m = maxOf(targetWidth, targetHeight)
+            if (m > maxDim) {
+                val s = maxDim.toDouble() / m
+                targetWidth = (targetWidth * s).toInt()
+                targetHeight = (targetHeight * s).toInt()
+            }
+
+            val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(
+                page, targetWidth, targetHeight, Bitmap.Config.ARGB_8888
+            ) ?: run {
+                page.close()
+                return null
+            }
+
+            val outFile = File(cacheDir, "p_${file.name.hashCode()}_${densityDpi}_$pageIndex.jpg")
+            outFile.outputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            bitmap.recycle()
+            page.close()
+            return outFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        } finally {
+            renderer?.close()
+            fd?.close()
+        }
     }
 
     fun handleTextTapped(pageIndex: Int, block: PdfTextBlock) {
-        val page = _uiState.value.pages.find { it.index == pageIndex } ?: return
+        val pageMeta = _uiState.value.pagesMeta.find { it.index == pageIndex } ?: return
+        val xFraction = block.x / pageMeta.width
+        val yFraction = block.y / pageMeta.height
+        val widthFraction = block.width / pageMeta.width
+        val heightFraction = block.height / pageMeta.height
 
-        // Check if an overlay already exists for this block
-        val existing = _uiState.value.overlays.find { it.pageIndex == pageIndex && it.originalText == block.text && Math.abs(it.xFraction - (block.x / page.width)) < 0.01f }
+        val existing = _uiState.value.overlays.find {
+            it.pageIndex == pageIndex && it.originalText == block.text && Math.abs(it.xFraction - xFraction) < 0.02f
+        }
         if (existing != null) {
             _uiState.value = _uiState.value.copy(selectedOverlayId = existing.id)
             return
         }
 
-        // Map original block coordinates to fractions relative to page
-        val xFraction = block.x / page.width
-        val yFraction = block.y / page.height
-        val widthFraction = block.width / page.width
-        val heightFraction = block.height / page.height
-
-        // Determine font category
         val fontCategory = when {
             block.fontName.contains("serif", ignoreCase = true) || block.fontName.contains("times", ignoreCase = true) -> "Serif"
             block.fontName.contains("monospace", ignoreCase = true) || block.fontName.contains("courier", ignoreCase = true) -> "Monospace"
@@ -172,6 +246,7 @@ class PdfEditorViewModel(
         val newOverlay = PdfEditOverlay(
             id = UUID.randomUUID().toString(),
             pageIndex = pageIndex,
+            type = OverlayType.TEXT_EDIT,
             originalText = block.text,
             text = block.text,
             xFraction = xFraction,
@@ -192,24 +267,59 @@ class PdfEditorViewModel(
         )
     }
 
-    fun addCustomTextOverlay(pageIndex: Int, xFraction: Float, yFraction: Float) {
+    fun addCustomTextOverlay(pageIndex: Int, xFraction: Float = 0.15f, yFraction: Float = 0.3f) {
         val newOverlay = PdfEditOverlay(
             id = UUID.randomUUID().toString(),
             pageIndex = pageIndex,
-            originalText = null,
-            text = "Tap to type",
+            type = OverlayType.CUSTOM_TEXT,
+            text = "Tap to type text",
             xFraction = xFraction,
             yFraction = yFraction,
-            widthFraction = 0.2f, // default initial width
-            heightFraction = 0.04f, // default initial height
-            fontSize = 12f,
-            isBold = false,
-            isItalic = false,
+            widthFraction = 0.35f,
+            heightFraction = 0.05f,
+            fontSize = 14f,
             color = android.graphics.Color.BLACK,
             fontName = "Sans",
-            whiteout = false // new text box doesn't whiteout anything
+            whiteout = false
         )
+        _uiState.value = _uiState.value.copy(
+            overlays = _uiState.value.overlays + newOverlay,
+            selectedOverlayId = newOverlay.id
+        )
+    }
 
+    fun addWhiteoutMaskOverlay(pageIndex: Int, xFraction: Float = 0.2f, yFraction: Float = 0.4f) {
+        val newOverlay = PdfEditOverlay(
+            id = UUID.randomUUID().toString(),
+            pageIndex = pageIndex,
+            type = OverlayType.WHITEOUT_MASK,
+            text = "",
+            xFraction = xFraction,
+            yFraction = yFraction,
+            widthFraction = 0.4f,
+            heightFraction = 0.08f,
+            whiteout = true,
+            color = android.graphics.Color.WHITE
+        )
+        _uiState.value = _uiState.value.copy(
+            overlays = _uiState.value.overlays + newOverlay,
+            selectedOverlayId = newOverlay.id
+        )
+    }
+
+    fun addImageOrSignatureOverlay(pageIndex: Int, imagePath: String, isSignature: Boolean = true) {
+        val newOverlay = PdfEditOverlay(
+            id = UUID.randomUUID().toString(),
+            pageIndex = pageIndex,
+            type = if (isSignature) OverlayType.SIGNATURE else OverlayType.IMAGE_STAMP,
+            text = "",
+            xFraction = 0.3f,
+            yFraction = 0.4f,
+            widthFraction = 0.35f,
+            heightFraction = 0.12f,
+            imagePath = imagePath,
+            whiteout = false
+        )
         _uiState.value = _uiState.value.copy(
             overlays = _uiState.value.overlays + newOverlay,
             selectedOverlayId = newOverlay.id
@@ -225,12 +335,6 @@ class PdfEditorViewModel(
         )
     }
 
-    fun updateOverlayById(updateBlock: (PdfEditOverlay) -> PdfEditOverlay) {
-        _uiState.value = _uiState.value.copy(
-            overlays = _uiState.value.overlays.map { updateBlock(it) }
-        )
-    }
-
     fun deleteSelectedOverlay() {
         val selectedId = _uiState.value.selectedOverlayId ?: return
         _uiState.value = _uiState.value.copy(
@@ -243,6 +347,32 @@ class PdfEditorViewModel(
         _uiState.value = _uiState.value.copy(selectedOverlayId = id)
     }
 
+    fun rotatePage(pageIndex: Int) {
+        val pages = _uiState.value.pagesMeta.toMutableList()
+        if (pageIndex in pages.indices) {
+            val current = pages[pageIndex]
+            val newRotation = (current.rotation + 90) % 360
+            pages[pageIndex] = current.copy(rotation = newRotation)
+            _uiState.value = _uiState.value.copy(pagesMeta = pages)
+        }
+    }
+
+    fun deletePage(pageIndex: Int) {
+        val pages = _uiState.value.pagesMeta.toMutableList()
+        if (pages.size > 1 && pageIndex in pages.indices) {
+            pages.removeAt(pageIndex)
+            val updated = pages.mapIndexed { idx, p -> p.copy(index = idx) }
+            val newActive = pageIndex.coerceAtMost(updated.size - 1)
+            _uiState.value = _uiState.value.copy(
+                totalPageCount = updated.size,
+                pagesMeta = updated,
+                activePageIndex = newActive,
+                selectedOverlayId = null
+            )
+            loadActivePageText(newActive)
+        }
+    }
+
     fun saveEdits() {
         viewModelScope.launch {
             val overlays = _uiState.value.overlays
@@ -250,17 +380,15 @@ class PdfEditorViewModel(
             try {
                 val file = File(pdfPath)
                 val output = File(appContext.cacheDir, "edited_${System.currentTimeMillis()}_${file.name}")
-                
+
                 withContext(Dispatchers.IO) {
                     PdfTools.savePdfEdits(file, output, overlays)
                 }
 
-                // Overwrite the original PDF file with the edited one
                 withContext(Dispatchers.IO) {
                     output.copyTo(file, overwrite = true)
                 }
 
-                // Save to documents
                 if (repository != null) {
                     withContext(Dispatchers.IO) {
                         try {
@@ -289,10 +417,8 @@ class PdfEditorViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        // Clean up page cache
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val cacheDir = File(appContext.cacheDir, "pdf_editor_cache")
                 if (cacheDir.exists()) cacheDir.deleteRecursively()
             } catch (_: Exception) {}
         }
