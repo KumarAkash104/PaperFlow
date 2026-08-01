@@ -52,10 +52,21 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 @Composable
-fun PaperFlowNavGraph(navController: NavHostController) {
+fun PaperFlowNavGraph(
+    navController: NavHostController,
+    initialExternalPdfPath: String? = null
+) {
     val context = LocalContext.current
     val repository = remember { DocumentRepository(context) }
     val photoRepository = remember { com.paperflow.app.data.repository.PhotoRepository(context) }
+
+    LaunchedEffect(initialExternalPdfPath) {
+        if (!initialExternalPdfPath.isNullOrBlank()) {
+            navController.navigate(Screen.PdfReader.createRoute(initialExternalPdfPath)) {
+                launchSingleTop = true
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -262,13 +273,18 @@ fun PaperFlowNavGraph(navController: NavHostController) {
         composable(
             route = Screen.PdfEditor.route,
             arguments = listOf(
-                navArgument("pdfPath") { type = NavType.StringType }
+                navArgument("pdfPath") { type = NavType.StringType },
+                navArgument("initialPageIndex") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
             )
         ) { backStack ->
             val pdfPathEncoded = backStack.arguments?.getString("pdfPath") ?: return@composable
+            val initialPageIndex = backStack.arguments?.getInt("initialPageIndex") ?: 0
             val pdfPath = android.net.Uri.decode(pdfPathEncoded)
-            val viewModel = remember(pdfPath) {
-                PdfEditorViewModel(context.applicationContext, pdfPath, repository)
+            val viewModel = remember(pdfPath, initialPageIndex) {
+                PdfEditorViewModel(context.applicationContext, pdfPath, repository, initialPageIndex)
             }
             PdfEditorScreen(
                 viewModel = viewModel,
@@ -308,16 +324,46 @@ fun PaperFlowNavGraph(navController: NavHostController) {
 
             LaunchedEffect(docId) {
                 val doc = withContext(Dispatchers.IO) { repository.getDocument(docId) }
-                val pages = withContext(Dispatchers.IO) { repository.getPagesSync(docId) }
-                val imagePaths = pages.sortedBy { it.pageIndex }.map { it.imagePath }
-                if (imagePaths.isNotEmpty()) {
+                val docDir = repository.getDocumentDir(docId)
+                var sourcePdf = File(docDir, "source.pdf")
+                if (!sourcePdf.exists()) {
+                    val pages = withContext(Dispatchers.IO) { repository.getPagesSync(docId) }
+                    if (pages.isNotEmpty()) {
+                        withContext<Unit>(Dispatchers.IO) {
+                            try {
+                                val imagePaths = pages.sortedBy { it.pageIndex }.map { it.imagePath }
+                                com.paperflow.app.pdf.PdfExporter.exportToPdf(
+                                    context = context.applicationContext,
+                                    imagePaths = imagePaths,
+                                    pageSize = com.paperflow.app.pdf.PageSize.A4,
+                                    quality = com.paperflow.app.pdf.ExportQuality.HIGH,
+                                    outputFile = sourcePdf
+                                )
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+                if (sourcePdf.exists()) {
                     viewModel = PdfReaderViewModel(
                         appContext = context.applicationContext,
-                        pdfPath = doc?.title ?: "Document",
+                        pdfPath = sourcePdf.absolutePath,
                         repository = repository,
-                        imagePagePaths = imagePaths,
                         initialDocumentId = docId
                     )
+                } else {
+                    val pages = withContext(Dispatchers.IO) { repository.getPagesSync(docId) }
+                    val imagePaths = pages.sortedBy { it.pageIndex }.map { it.imagePath }
+                    if (imagePaths.isNotEmpty()) {
+                        viewModel = PdfReaderViewModel(
+                            appContext = context.applicationContext,
+                            pdfPath = doc?.title ?: "Document",
+                            repository = repository,
+                            imagePagePaths = imagePaths,
+                            initialDocumentId = docId
+                        )
+                    }
                 }
             }
 

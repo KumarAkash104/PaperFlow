@@ -155,4 +155,18 @@ class ExportViewModel(
             context.startActivity(Intent.createChooser(intent, "Share images via"))
         }
     }
+
+    fun saveToDownloads(context: Context): Boolean {
+        val files = _uiState.value.exportedFiles.ifEmpty {
+            listOfNotNull(_uiState.value.exportedFile)
+        }
+        if (files.isEmpty()) return false
+        val mime = if (_uiState.value.format == ExportFormat.PDF) "application/pdf" else "image/jpeg"
+        var success = true
+        for (f in files) {
+            val s = com.paperflow.app.util.FileUtils.saveFileToDownloads(context, f, mime)
+            if (!s) success = false
+        }
+        return success
+    }
 }

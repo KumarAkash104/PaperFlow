@@ -49,7 +49,8 @@ data class PdfEditorUiState(
 class PdfEditorViewModel(
     private val appContext: Context,
     private val pdfPath: String,
-    private val repository: DocumentRepository? = null
+    private val repository: DocumentRepository? = null,
+    private val initialPageIndex: Int = 0
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PdfEditorUiState())
@@ -59,6 +60,7 @@ class PdfEditorViewModel(
     private val thumbCache = ConcurrentHashMap<Int, String>()
     private val pageBlocksCache = ConcurrentHashMap<Int, List<PdfTextBlock>>()
     private val renderMutex = Mutex()
+    private var activeDocumentId: String? = null
 
     private val cacheDir by lazy {
         File(appContext.cacheDir, "pdf_editor_cache").also { if (!it.exists()) it.mkdirs() }
@@ -85,15 +87,17 @@ class PdfEditorViewModel(
                     readPageMetaList(file)
                 }
 
+                val targetPage = initialPageIndex.coerceIn(0, (metaList.size - 1).coerceAtLeast(0))
+
                 _uiState.value = _uiState.value.copy(
                     isProcessing = false,
                     totalPageCount = metaList.size,
                     pagesMeta = metaList,
-                    activePageIndex = 0
+                    activePageIndex = targetPage
                 )
 
-                // Lazily load text for page 0
-                loadActivePageText(0)
+                // Lazily load text for target page
+                loadActivePageText(targetPage)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
@@ -206,9 +210,9 @@ class PdfEditorViewModel(
                 return null
             }
 
-            val outFile = File(cacheDir, "p_${file.name.hashCode()}_${densityDpi}_$pageIndex.jpg")
+            val outFile = File(cacheDir, "p_${file.name.hashCode()}_${densityDpi}_$pageIndex.png")
             outFile.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
             bitmap.recycle()
             page.close()
@@ -383,18 +387,45 @@ class PdfEditorViewModel(
 
                 withContext(Dispatchers.IO) {
                     PdfTools.savePdfEdits(file, output, overlays)
-                }
-
-                withContext(Dispatchers.IO) {
                     output.copyTo(file, overwrite = true)
-                }
 
-                if (repository != null) {
-                    withContext(Dispatchers.IO) {
+                    if (repository != null) {
                         try {
-                            PdfImporter.importPdfAsDocument(file, repository, "Edited")
-                        } catch (_: Exception) {}
+                            val existingDocId = activeDocumentId
+                            val editedPageIndices = overlays.map { it.pageIndex }.distinct().ifEmpty { listOf(_uiState.value.activePageIndex) }
+
+                            if (existingDocId != null) {
+                                val docDir = repository.getDocumentDir(existingDocId)
+                                val docSourcePdf = File(docDir, "source.pdf")
+                                file.copyTo(docSourcePdf, overwrite = true)
+
+                                val pages = repository.getPagesSync(existingDocId).sortedBy { it.pageIndex }
+                                for (idx in editedPageIndices) {
+                                    val pageEntity = pages.find { it.pageIndex == idx }
+                                    if (pageEntity != null) {
+                                        val renderedPath = renderPageBitmap(idx, densityDpi = 300, maxDim = 2560)
+                                        if (renderedPath != null) {
+                                            File(renderedPath).copyTo(File(pageEntity.imagePath), overwrite = true)
+                                        }
+                                    }
+                                }
+                            } else {
+                                val imported = PdfImporter.importPdfAsDocument(file, repository, "Edited")
+                                if (imported != null) {
+                                    activeDocumentId = imported.id
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
+
+                    // Invalidate render cache
+                    try {
+                        if (cacheDir.exists()) {
+                            cacheDir.listFiles()?.forEach { it.delete() }
+                        }
+                    } catch (_: Exception) {}
                 }
 
                 _uiState.value = _uiState.value.copy(

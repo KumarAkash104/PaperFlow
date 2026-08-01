@@ -15,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -199,13 +201,33 @@ fun ExportScreen(
                         Spacer(Modifier.height(8.dp))
                         Text("Export complete!", style = MaterialTheme.typography.titleSmall)
                         Spacer(Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = { viewModel.shareFile(context) },
-                            modifier = Modifier.fillMaxWidth(),
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.Share, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Share")
+                            Button(
+                                onClick = {
+                                    val success = viewModel.saveToDownloads(context)
+                                    if (success) {
+                                        Toast.makeText(context, "Saved to Downloads/PaperFlow folder!", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        Toast.makeText(context, "Failed to save file", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(Icons.Default.Download, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Save to Phone")
+                            }
+                            OutlinedButton(
+                                onClick = { viewModel.shareFile(context) },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(Icons.Default.Share, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Share")
+                            }
                         }
                     }
                 }

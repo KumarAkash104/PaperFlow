@@ -11,6 +11,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -92,6 +96,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.size.Precision
+import coil3.size.Size
 import com.paperflow.app.pdf.OverlayType
 import com.paperflow.app.pdf.PdfEditOverlay
 import com.paperflow.app.pdf.PdfTextBlock
@@ -118,10 +125,10 @@ fun PdfEditorScreen(
     var showPageGridDrawer by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Observe saved state to automatically exit
+    // Observe saved state to display confirmation and redirect to Documents screen
     LaunchedEffect(uiState.savedFilePath) {
         uiState.savedFilePath?.let {
-            Toast.makeText(context, "Edited PDF saved successfully!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Edited PDF saved to Documents!", Toast.LENGTH_SHORT).show()
             viewModel.clearSavedState()
             onBack()
         }
@@ -235,8 +242,8 @@ fun PdfEditorScreen(
                                             offsetY = 0f
                                         }
                                         event.changes.forEach { it.consume() }
-                                    } else if (pointerCount == 1 && scale > 1.05f) {
-                                        // Single finger pan when zoomed in
+                                    } else if (pointerCount == 1 && scale > 1.05f && uiState.selectedOverlayId == null) {
+                                        // Single finger pan when zoomed in (only when no overlay box is selected)
                                         val panChange = event.calculatePan()
                                         offsetX += panChange.x
                                         offsetY += panChange.y
@@ -254,6 +261,7 @@ fun PdfEditorScreen(
                         activePageBlocks = uiState.activePageBlocks,
                         overlays = uiState.overlays.filter { it.pageIndex == activeMeta.index },
                         selectedOverlayId = uiState.selectedOverlayId,
+                        zoomScale = scale,
                         onSelectOverlay = { id -> viewModel.selectOverlay(id) },
                         onTapTextBlock = { block -> viewModel.handleTextTapped(activeMeta.index, block) },
                         onUpdateOverlay = { updateBlock -> viewModel.updateSelectedOverlay(updateBlock) }
@@ -333,6 +341,7 @@ fun ActivePageCanvas(
     activePageBlocks: List<PdfTextBlock>,
     overlays: List<PdfEditOverlay>,
     selectedOverlayId: String?,
+    zoomScale: Float = 1f,
     onSelectOverlay: (String?) -> Unit,
     onTapTextBlock: (PdfTextBlock) -> Unit,
     onUpdateOverlay: ((PdfEditOverlay) -> PdfEditOverlay) -> Unit
@@ -365,8 +374,16 @@ fun ActivePageCanvas(
         ) {
             // Page Image
             if (highResPath != null) {
+                val currentContext = LocalContext.current
+                val editorImageRequest = remember<ImageRequest>(highResPath) {
+                    ImageRequest.Builder(currentContext)
+                        .data(File(highResPath!!))
+                        .size(Size.ORIGINAL)
+                        .precision(Precision.EXACT)
+                        .build()
+                }
                 AsyncImage(
-                    model = File(highResPath!!),
+                    model = editorImageRequest,
                     contentDescription = "Page ${pageMeta.index + 1}",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
@@ -405,6 +422,25 @@ fun ActivePageCanvas(
                     modifier = Modifier
                         .offset { IntOffset(xPx.dp.roundToPx(), yPx.dp.roundToPx()) }
                         .size(wPx.dp, hPx.dp)
+                        .pointerInput(overlay.id, containerWidth.value, containerHeight.value, zoomScale) {
+                            detectDragGestures(
+                                onDragStart = { onSelectOverlay(overlay.id) },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    val safeScale = zoomScale.coerceAtLeast(0.1f)
+                                    val dxFraction = (dragAmount.x / safeScale) / containerWidth.value
+                                    val dyFraction = (dragAmount.y / safeScale) / containerHeight.value
+                                    onUpdateOverlay { current ->
+                                        if (current.id == overlay.id) {
+                                            current.copy(
+                                                xFraction = (current.xFraction + dxFraction).coerceIn(0f, (1f - current.widthFraction).coerceAtLeast(0f)),
+                                                yFraction = (current.yFraction + dyFraction).coerceIn(0f, (1f - current.heightFraction).coerceAtLeast(0f))
+                                            )
+                                        } else current
+                                    }
+                                }
+                            )
+                        }
                         .clickable { onSelectOverlay(overlay.id) }
                         .then(
                             if (isSelected) Modifier.border(1.5.dp, Color(0xFF1E88E5), RoundedCornerShape(4.dp))
@@ -423,21 +459,46 @@ fun ActivePageCanvas(
                     // Content layer
                     when (overlay.type) {
                         OverlayType.TEXT_EDIT, OverlayType.CUSTOM_TEXT -> {
-                            Text(
-                                text = overlay.text,
-                                fontSize = (overlay.fontSize * (containerWidth.value / pageMeta.width)).sp,
-                                fontWeight = if (overlay.isBold) FontWeight.Bold else FontWeight.Normal,
-                                fontStyle = if (overlay.isItalic) FontStyle.Italic else FontStyle.Normal,
-                                fontFamily = when (overlay.fontName) {
-                                    "Serif" -> FontFamily.Serif
-                                    "Monospace" -> FontFamily.Monospace
-                                    else -> FontFamily.SansSerif
-                                },
-                                color = Color(overlay.color),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(2.dp)
-                            )
+                            if (isSelected) {
+                                BasicTextField(
+                                    value = overlay.text,
+                                    onValueChange = { newText ->
+                                        onUpdateOverlay { current ->
+                                            if (current.id == overlay.id) current.copy(text = newText) else current
+                                        }
+                                    },
+                                    textStyle = TextStyle(
+                                        fontSize = (overlay.fontSize * (containerWidth.value / pageMeta.width)).sp,
+                                        fontWeight = if (overlay.isBold) FontWeight.Bold else FontWeight.Normal,
+                                        fontStyle = if (overlay.isItalic) FontStyle.Italic else FontStyle.Normal,
+                                        fontFamily = when (overlay.fontName) {
+                                            "Serif" -> FontFamily.Serif
+                                            "Monospace" -> FontFamily.Monospace
+                                            else -> FontFamily.SansSerif
+                                        },
+                                        color = Color(overlay.color)
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(2.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = overlay.text,
+                                    fontSize = (overlay.fontSize * (containerWidth.value / pageMeta.width)).sp,
+                                    fontWeight = if (overlay.isBold) FontWeight.Bold else FontWeight.Normal,
+                                    fontStyle = if (overlay.isItalic) FontStyle.Italic else FontStyle.Normal,
+                                    fontFamily = when (overlay.fontName) {
+                                        "Serif" -> FontFamily.Serif
+                                        "Monospace" -> FontFamily.Monospace
+                                        else -> FontFamily.SansSerif
+                                    },
+                                    color = Color(overlay.color),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(2.dp)
+                                )
+                            }
                         }
                         OverlayType.SIGNATURE, OverlayType.IMAGE_STAMP -> {
                             if (overlay.imagePath != null && File(overlay.imagePath).exists()) {
@@ -452,6 +513,35 @@ fun ActivePageCanvas(
                         OverlayType.WHITEOUT_MASK -> {
                             // Already rendered whiteout background box above
                         }
+                    }
+
+                    // Interactive Corner Resize Drag Handle (When Selected)
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 6.dp, y = 6.dp)
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF1E88E5))
+                                .border(1.5.dp, Color.White, CircleShape)
+                                .pointerInput(overlay.id, containerWidth.value, containerHeight.value, zoomScale) {
+                                    detectDragGestures { change, dragAmount ->
+                                        change.consume()
+                                        val safeScale = zoomScale.coerceAtLeast(0.1f)
+                                        val dwFraction = (dragAmount.x / safeScale) / containerWidth.value
+                                        val dhFraction = (dragAmount.y / safeScale) / containerHeight.value
+                                        onUpdateOverlay { current ->
+                                            if (current.id == overlay.id) {
+                                                current.copy(
+                                                    widthFraction = (current.widthFraction + dwFraction).coerceIn(0.02f, 1f - current.xFraction),
+                                                    heightFraction = (current.heightFraction + dhFraction).coerceIn(0.01f, 1f - current.yFraction)
+                                                )
+                                            } else current
+                                        }
+                                    }
+                                }
+                        )
                     }
                 }
             }
@@ -540,6 +630,36 @@ fun SelectedOverlayControlBar(
                 }
             }
 
+            if (overlay.type == OverlayType.WHITEOUT_MASK || overlay.type == OverlayType.SIGNATURE || overlay.type == OverlayType.IMAGE_STAMP) {
+                // Dimension fine-tuning controls
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text("Width:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(
+                        onClick = { onUpdate { it.copy(widthFraction = (it.widthFraction - 0.02f).coerceAtLeast(0.02f)) } },
+                        modifier = Modifier.size(28.dp)
+                    ) { Text("-", fontWeight = FontWeight.Bold) }
+                    IconButton(
+                        onClick = { onUpdate { it.copy(widthFraction = (it.widthFraction + 0.02f).coerceAtMost(1f - it.xFraction)) } },
+                        modifier = Modifier.size(28.dp)
+                    ) { Text("+", fontWeight = FontWeight.Bold) }
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text("Height:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(
+                        onClick = { onUpdate { it.copy(heightFraction = (it.heightFraction - 0.01f).coerceAtLeast(0.01f)) } },
+                        modifier = Modifier.size(28.dp)
+                    ) { Text("-", fontWeight = FontWeight.Bold) }
+                    IconButton(
+                        onClick = { onUpdate { it.copy(heightFraction = (it.heightFraction + 0.01f).coerceAtMost(1f - it.yFraction)) } },
+                        modifier = Modifier.size(28.dp)
+                    ) { Text("+", fontWeight = FontWeight.Bold) }
+                }
+            }
+
             Spacer(Modifier.weight(1f))
 
             // Delete Overlay
@@ -570,39 +690,48 @@ fun EditorBottomActionBar(
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Page Grid Selector
-        IconButton(onClick = onOpenPageGrid) {
-            Icon(Icons.Default.GridView, "Page Grid", tint = MaterialTheme.colorScheme.onSurface)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onOpenPageGrid() }.padding(4.dp)) {
+            Icon(Icons.Default.GridView, "Pages", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+            Text("Pages", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
         }
 
         // Add Text
-        IconButton(onClick = onAddText) {
-            Icon(Icons.Default.TextFields, "Add Text", tint = MaterialTheme.colorScheme.onSurface)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onAddText() }.padding(4.dp)) {
+            Icon(Icons.Default.TextFields, "Add Text", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+            Text("Add Text", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
         }
 
-        // Whiteout Mask
-        IconButton(onClick = onAddWhiteout) {
-            Icon(Icons.Default.CropSquare, "Whiteout", tint = MaterialTheme.colorScheme.onSurface)
+        // Whiteout Mask (Redact Box)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onAddWhiteout() }.padding(4.dp)) {
+            Icon(Icons.Default.CropSquare, "Whiteout Box", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+            Text("Whiteout", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
         }
 
         // Rotate Page
-        IconButton(onClick = onRotatePage) {
-            Icon(Icons.Default.RotateRight, "Rotate Page", tint = MaterialTheme.colorScheme.onSurface)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onRotatePage() }.padding(4.dp)) {
+            Icon(Icons.Default.RotateRight, "Rotate", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+            Text("Rotate", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
         }
 
         // Delete Page
-        IconButton(onClick = onDeletePage, enabled = canDeletePage) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable(enabled = canDeletePage) { onDeletePage() }.padding(4.dp)
+        ) {
             Icon(
                 Icons.Default.Delete,
-                "Delete Page",
-                tint = if (canDeletePage) Color.Red.copy(alpha = 0.8f) else Color.Gray.copy(alpha = 0.4f)
+                "Delete",
+                tint = if (canDeletePage) Color.Red.copy(alpha = 0.8f) else Color.Gray.copy(alpha = 0.4f),
+                modifier = Modifier.size(20.dp)
             )
+            Text("Delete", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = if (canDeletePage) Color.Red else Color.Gray)
         }
     }
 }

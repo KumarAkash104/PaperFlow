@@ -214,12 +214,17 @@ class DocumentRepository(context: Context) {
         )
     }
 
-    // ── File helpers ──
+    fun getDocumentDir(documentId: String): File {
+        val folder = File(appContext.filesDir, "doc_$documentId")
+        if (!folder.exists()) folder.mkdirs()
+        return folder
+    }
 
-    fun createScanImageFile(): File {
+    fun createScanImageFile(extension: String = ".png"): File {
         val folder = File(appContext.filesDir, "scans")
         if (!folder.exists()) folder.mkdirs()
-        val name = "scan_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(8)}.jpg"
+        val ext = if (extension.startsWith(".")) extension else ".$extension"
+        val name = "scan_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(8)}$ext"
         return File(folder, name)
     }
 }

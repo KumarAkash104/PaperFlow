@@ -233,7 +233,7 @@ class HomeViewModel(
             _isImporting.value = true
             try {
                 val tempFile = withContext(Dispatchers.IO) {
-                    val file = File(context.cacheDir, "temp_import.pdf")
+                    val file = File(context.cacheDir, "import_${System.currentTimeMillis()}.pdf")
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         file.outputStream().use { output -> input.copyTo(output) }
                     }

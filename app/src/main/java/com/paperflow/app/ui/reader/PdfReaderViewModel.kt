@@ -223,13 +223,13 @@ class PdfReaderViewModel(
 
             val page = renderer.openPage(pageIndex)
 
-            // Render at 300 DPI for crystal clear text, capped at 4000px max dimension
-            val densityDpi = 300
+            // Render at 350 DPI for crystal-clear sharp text, capped at 4200px max dimension
+            val densityDpi = 350
             var targetWidth = (page.width * densityDpi / 72.0).toInt()
             var targetHeight = (page.height * densityDpi / 72.0).toInt()
             val maxDim = maxOf(targetWidth, targetHeight)
-            if (maxDim > 4000) {
-                val scale = 4000.0 / maxDim
+            if (maxDim > 4200) {
+                val scale = 4200.0 / maxDim
                 targetWidth = (targetWidth * scale).toInt()
                 targetHeight = (targetHeight * scale).toInt()
             }
@@ -240,10 +240,10 @@ class PdfReaderViewModel(
                 return null
             }
 
-            // Save at 95% quality for minimal artifacts on text
-            val pageFile = File(cacheDir, "reader_p${pageIndex}.jpg")
+            // Save as 100% Lossless PNG for zero-artifact vector text clarity
+            val pageFile = File(cacheDir, "reader_p${pageIndex}.png")
             pageFile.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
             bitmap.recycle()
             page.close()
@@ -316,7 +316,7 @@ class PdfReaderViewModel(
                                 }
 
                                 File(pageEntity.imagePath).outputStream().use { out ->
-                                    annotatedBmp.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                    annotatedBmp.compress(Bitmap.CompressFormat.PNG, 100, out)
                                 }
                                 annotatedBmp.recycle()
                             }
@@ -333,10 +333,10 @@ class PdfReaderViewModel(
                     val total = _uiState.value.pageCount
 
                     for (pageIndex in 0 until total) {
-                        val imagePath = getPageImagePath(pageIndex) ?: continue
+                        val imagePath = getPageImagePath(pageIndex) ?: renderPage(pageIndex) ?: continue
                         val strokes = pageStrokesMap[pageIndex] ?: emptyList()
 
-                        val finalFile = repository.createScanImageFile()
+                        val finalFile = repository.createScanImageFile(".png")
                         if (strokes.isNotEmpty() && File(imagePath).exists()) {
                             val srcBmp = BitmapFactory.decodeFile(imagePath)
                             if (srcBmp != null) {
@@ -369,7 +369,7 @@ class PdfReaderViewModel(
                                 }
 
                                 finalFile.outputStream().use { out ->
-                                    annotatedBmp.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                    annotatedBmp.compress(Bitmap.CompressFormat.PNG, 100, out)
                                 }
                                 annotatedBmp.recycle()
                             } else {
@@ -382,6 +382,7 @@ class PdfReaderViewModel(
                         repository.addPage(doc.id, finalFile.absolutePath, pageIndex)
                     }
                 }
+                pageCache.clear()
                 _uiState.value = _uiState.value.copy(savedToDocuments = true)
                 true
             } catch (e: Exception) {

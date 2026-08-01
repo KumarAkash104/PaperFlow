@@ -35,8 +35,8 @@ sealed class Screen(val route: String) {
 
     data object Settings : Screen("settings")
 
-    data object PdfEditor : Screen("pdf_editor/{pdfPath}") {
-        fun createRoute(pdfPath: String) = "pdf_editor/${android.net.Uri.encode(pdfPath)}"
+    data object PdfEditor : Screen("pdf_editor/{pdfPath}?page={initialPageIndex}") {
+        fun createRoute(pdfPath: String, initialPageIndex: Int = 0) = "pdf_editor/${android.net.Uri.encode(pdfPath)}?page=$initialPageIndex"
     }
 
     data object PdfReader : Screen("pdf_reader/{pdfPath}") {

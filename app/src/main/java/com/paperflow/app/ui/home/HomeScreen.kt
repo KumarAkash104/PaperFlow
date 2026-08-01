@@ -717,7 +717,7 @@ private fun DocumentListCard(
                             .data(file)
                             .memoryCacheKey("${document.thumbnailPath}_$lastMod")
                             .diskCacheKey("${document.thumbnailPath}_$lastMod")
-                            .size(120, 120)
+                            .size(480, 480)
                             .build(),
                         contentDescription = document.title,
                         contentScale = ContentScale.Crop,
@@ -900,7 +900,7 @@ private fun DocumentCard(
                             .data(file)
                             .memoryCacheKey("${document.thumbnailPath}_$lastMod")
                             .diskCacheKey("${document.thumbnailPath}_$lastMod")
-                            .size(360, 480)
+                            .size(720, 960)
                             .build(),
                         contentDescription = document.title,
                         contentScale = ContentScale.Crop,

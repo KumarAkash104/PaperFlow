@@ -28,8 +28,11 @@ import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.SaveAlt
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -339,6 +342,23 @@ fun PdfToolsScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(uiState.resultMessage ?: "Done!")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                val file = uiState.resultFile!!
+                                val success = com.paperflow.app.util.FileUtils.saveFileToDownloads(context, file)
+                                if (success) {
+                                    Toast.makeText(context, "Saved to Downloads/PaperFlow folder!", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, "Failed to save file", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Default.Download, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Save to Phone")
                         }
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(

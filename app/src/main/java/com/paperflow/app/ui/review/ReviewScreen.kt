@@ -363,6 +363,8 @@ private fun PageCard(
                         .data(file)
                         .memoryCacheKey("${page.imagePath}_$lastMod")
                         .diskCacheKey("${page.imagePath}_$lastMod")
+                        .size(coil3.size.Size.ORIGINAL)
+                        .precision(coil3.size.Precision.EXACT)
                         .build(),
                     contentDescription = "Page $pageNumber",
                     contentScale = ContentScale.Crop,

@@ -33,36 +33,43 @@ object PdfImporter {
             pdfRenderer = PdfRenderer(fd)
 
             val pageCount = pdfRenderer.pageCount
+            
+            // Save source PDF into document folder for instant, zero-loss vector reading
+            val docDir = repository.getDocumentDir(document.id)
+            val docSourcePdf = File(docDir, "source.pdf")
+            file.copyTo(docSourcePdf, overwrite = true)
+
             for (i in 0 until pageCount) {
                 val page = pdfRenderer.openPage(i)
-                
-                // Render at a higher resolution (e.g., 2x standard) for good editing quality
-                // Standard A4 is 595x842 pts. Let's render at ~1500px width, clamped to a safe maximum of 2800px.
-                val densityDpi = 300 // Simulate 300 dpi
-                val rawWidth = (page.width * densityDpi / 72.0).toInt()
-                val rawHeight = (page.height * densityDpi / 72.0).toInt()
-                var width = rawWidth
-                var height = rawHeight
+                // 300 DPI, 2560px max — safe for Android heap without OOM fallback
+                val densityDpi = 300
+                var width = (page.width * densityDpi / 72.0).toInt()
+                var height = (page.height * densityDpi / 72.0).toInt()
                 val maxDim = maxOf(width, height)
-                if (maxDim > 3500) {
-                    val scale = 3500.0 / maxDim
+                if (maxDim > 2560) {
+                    val scale = 2560.0 / maxDim
                     width = (width * scale).toInt()
                     height = (height * scale).toInt()
                 }
 
                 val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, width, height, Bitmap.Config.ARGB_8888)
-                if (bitmap == null) {
-                    page.close()
-                    continue
+                if (bitmap != null) {
+                    val pageImgFile = File(docDir, "page_${i}.png")
+                    pageImgFile.outputStream().use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    }
+                    bitmap.recycle()
+                    repository.addPage(document.id, pageImgFile.absolutePath, i)
                 }
                 page.close()
-                // Save bitmap to file
-                val imageFile = repository.createScanImageFile()
-                ImageProcessor.saveBitmap(bitmap, imageFile, 95)
-                bitmap.recycle()
 
-                // Add page to document
-                repository.addPage(document.id, imageFile.absolutePath, i)
+                // Aggressive memory cleanup after each page to prevent OOM on multi-page PDFs
+                System.gc()
+            }
+
+            val updatedPages = repository.getPagesSync(document.id)
+            if (updatedPages.isNotEmpty()) {
+                repository.updateDocument(document.copy(thumbnailPath = updatedPages.first().imagePath, pageCount = updatedPages.size))
             }
         } catch (e: Exception) {
             e.printStackTrace()

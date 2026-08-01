@@ -120,57 +120,81 @@ object PdfTools {
      * Compress a PDF by re-rendering pages as JPEG images at the given quality.
      * @param qualityPercent JPEG quality 10-100. Lower = smaller file, less quality.
      */
+    /**
+     * Compress a PDF with adaptive DPI and resolution scaling.
+     * @param qualityPercent Compression level (10-100). Lower = smaller file size.
+     */
     fun compressPdf(inputFile: File, outputFile: File, qualityPercent: Int = 60): File {
         val quality = qualityPercent.coerceIn(10, 100)
 
-        // Render each page to bitmap via PdfRenderer, then rebuild as JPEG-based PDF
-        var fd: ParcelFileDescriptor? = null
-        var renderer: PdfRenderer? = null
-        val doc = PDDocument()
-        try {
-            fd = ParcelFileDescriptor.open(inputFile, ParcelFileDescriptor.MODE_READ_ONLY)
-            renderer = PdfRenderer(fd)
+        // Calculate adaptive DPI and max dimension based on target quality
+        val targetDpi = (72 + (quality.toFloat() / 100f) * 78f).toInt().coerceIn(80, 150)
+        val targetMaxDim = (900 + (quality.toFloat() / 100f) * 700f).toInt().coerceIn(800, 1600)
 
-            for (i in 0 until renderer.pageCount) {
-                val page = renderer.openPage(i)
+        fun performCompressPass(dpi: Int, maxDimLimit: Int, jpegQualityPct: Int): Boolean {
+            var fd: ParcelFileDescriptor? = null
+            var renderer: PdfRenderer? = null
+            val doc = PDDocument()
+            return try {
+                fd = ParcelFileDescriptor.open(inputFile, ParcelFileDescriptor.MODE_READ_ONLY)
+                renderer = PdfRenderer(fd)
 
-                // Render at high resolution to keep text sharp
-                val densityDpi = 300
-                var bmpWidth = (page.width * densityDpi / 72.0).toInt()
-                var bmpHeight = (page.height * densityDpi / 72.0).toInt()
-                val maxDim = maxOf(bmpWidth, bmpHeight)
-                if (maxDim > 3500) {
-                    val scale = 3500.0 / maxDim
-                    bmpWidth = (bmpWidth * scale).toInt()
-                    bmpHeight = (bmpHeight * scale).toInt()
-                }
-                val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(page, bmpWidth, bmpHeight, Bitmap.Config.ARGB_8888)
-                if (bitmap == null) {
+                for (i in 0 until renderer.pageCount) {
+                    val page = renderer.openPage(i)
+
+                    var bmpWidth = (page.width * dpi / 72.0).toInt()
+                    var bmpHeight = (page.height * dpi / 72.0).toInt()
+                    val maxDim = maxOf(bmpWidth, bmpHeight)
+                    if (maxDim > maxDimLimit) {
+                        val scale = maxDimLimit.toDouble() / maxDim
+                        bmpWidth = (bmpWidth * scale).toInt()
+                        bmpHeight = (bmpHeight * scale).toInt()
+                    }
+                    val bitmap = com.paperflow.app.util.BitmapUtils.safeCreateAndRenderBitmap(
+                        page, bmpWidth, bmpHeight, Bitmap.Config.ARGB_8888
+                    )
+                    if (bitmap == null) {
+                        page.close()
+                        continue
+                    }
+
+                    val mediaBox = PDRectangle(page.width.toFloat(), page.height.toFloat())
                     page.close()
-                    continue
+                    val pdfPage = PDPage(mediaBox)
+                    doc.addPage(pdfPage)
+
+                    val pdImage = JPEGFactory.createFromImage(doc, bitmap, jpegQualityPct.toFloat() / 100f)
+                    bitmap.recycle()
+
+                    val contentStream = PDPageContentStream(doc, pdfPage)
+                    contentStream.drawImage(pdImage, 0f, 0f, mediaBox.width, mediaBox.height)
+                    contentStream.close()
                 }
-                // Create a new PDF page with matching dimensions
-                val mediaBox = PDRectangle(page.width.toFloat(), page.height.toFloat())
-                page.close()
-                val pdfPage = PDPage(mediaBox)
-                doc.addPage(pdfPage)
 
-                // Encode bitmap → PDImageXObject with the target quality
-                // pdfbox-android's JPEGFactory.createFromImage takes a Bitmap, not BufferedImage.
-                val pdImage = JPEGFactory.createFromImage(doc, bitmap, quality.toFloat() / 100f)
-                bitmap.recycle()
-
-                val contentStream = PDPageContentStream(doc, pdfPage)
-                contentStream.drawImage(pdImage, 0f, 0f, mediaBox.width, mediaBox.height)
-                contentStream.close()
+                doc.save(outputFile)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            } finally {
+                doc.close()
+                renderer?.close()
+                fd?.close()
             }
-
-            doc.save(outputFile)
-        } finally {
-            doc.close()
-            renderer?.close()
-            fd?.close()
         }
+
+        // Pass 1: Adaptive compression
+        val pass1Success = performCompressPass(targetDpi, targetMaxDim, quality)
+
+        // Safety Guard: If compressed result is LARGER than original or failed, perform aggressive Pass 2
+        if (!pass1Success || outputFile.length() >= inputFile.length()) {
+            val pass2Success = performCompressPass(dpi = 85, maxDimLimit = 950, jpegQualityPct = (quality - 15).coerceAtLeast(20))
+            if (!pass2Success || outputFile.length() >= inputFile.length()) {
+                // If file size cannot be reduced further, preserve original input file so size NEVER increases!
+                inputFile.copyTo(outputFile, overwrite = true)
+            }
+        }
+
         return outputFile
     }
 

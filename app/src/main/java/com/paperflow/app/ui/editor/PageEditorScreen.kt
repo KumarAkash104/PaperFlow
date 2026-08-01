@@ -533,6 +533,8 @@ fun PageEditorScreen(
                         model = coil3.request.ImageRequest.Builder(LocalContext.current)
                             .data(file)
                             .memoryCacheKey("${page.imagePath}_$lastMod")
+                            .size(coil3.size.Size.ORIGINAL)
+                            .precision(coil3.size.Precision.EXACT)
                             .build(),
                         contentDescription = "Page ${pageIndex + 1}",
                         contentScale = ContentScale.Fit,
