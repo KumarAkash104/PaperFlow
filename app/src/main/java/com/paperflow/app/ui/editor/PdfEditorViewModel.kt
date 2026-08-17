@@ -403,7 +403,7 @@ class PdfEditorViewModel(
                                 for (idx in editedPageIndices) {
                                     val pageEntity = pages.find { it.pageIndex == idx }
                                     if (pageEntity != null) {
-                                        val renderedPath = renderPageBitmap(idx, densityDpi = 300, maxDim = 2560)
+                                        val renderedPath = renderPageBitmap(idx, densityDpi = 350, maxDim = 3200)
                                         if (renderedPath != null) {
                                             File(renderedPath).copyTo(File(pageEntity.imagePath), overwrite = true)
                                         }

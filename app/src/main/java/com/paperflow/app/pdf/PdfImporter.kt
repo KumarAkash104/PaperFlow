@@ -41,13 +41,13 @@ object PdfImporter {
 
             for (i in 0 until pageCount) {
                 val page = pdfRenderer.openPage(i)
-                // 300 DPI, 2560px max — safe for Android heap without OOM fallback
-                val densityDpi = 300
+                // 350 DPI, 3200px max — crystal-clear high-res rendering
+                val densityDpi = 350
                 var width = (page.width * densityDpi / 72.0).toInt()
                 var height = (page.height * densityDpi / 72.0).toInt()
                 val maxDim = maxOf(width, height)
-                if (maxDim > 2560) {
-                    val scale = 2560.0 / maxDim
+                if (maxDim > 3200) {
+                    val scale = 3200.0 / maxDim
                     width = (width * scale).toInt()
                     height = (height * scale).toInt()
                 }

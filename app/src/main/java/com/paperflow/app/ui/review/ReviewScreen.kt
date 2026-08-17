@@ -70,6 +70,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.paperflow.app.ui.components.DocumentSelectionDialog
 import com.paperflow.app.ui.home.DocumentTransferMode
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
 import java.io.File
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -201,7 +204,6 @@ fun ReviewScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         if (uiState.pages.isEmpty()) {
-            // Empty state
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -221,122 +223,110 @@ fun ReviewScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Tap + to scan pages",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    )
                 }
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                itemsIndexed(
-                    items = uiState.pages,
-                    key = { _, page -> page.id },
-                ) { index, page ->
-                    PageCard(
-                        page = page,
-                        pageNumber = index + 1,
-                        canMoveUp = index > 0,
-                        canMoveDown = index < uiState.pages.size - 1,
-                        isSelected = page.id in uiState.selectedPageIds,
-                        isSelectionMode = isSelectionMode,
-                        onMoveUp = { viewModel.movePage(index, index - 1) },
-                        onMoveDown = { viewModel.movePage(index, index + 1) },
-                        onDelete = { deleteConfirmPageId = page.id },
-                        onEdit = { onEditPage(page.id) },
-                        onSign = { onSignPage(page.id) },
-                        onAnnotate = { onAnnotatePage(page.id) },
-                        onClick = {
-                            if (isSelectionMode) {
-                                viewModel.toggleSelection(page.id)
-                            } else {
-                                onEditPage(page.id)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-
-    // Delete confirmation dialog
-    if (deleteConfirmPageId != null) {
-        AlertDialog(
-            onDismissRequest = { deleteConfirmPageId = null },
-            title = { Text("Delete page?") },
-            text = { Text("This page will be permanently removed.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        deleteConfirmPageId?.let { viewModel.deletePage(it) }
-                        deleteConfirmPageId = null
-                    },
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleteConfirmPageId = null }) {
-                    Text("Cancel")
-                }
-            },
-        )
-    }
-
-    if (showTransferDialog && uiState.activeSelectionType != null && uiState.activeSelectionType != ReviewSelectionType.CONVERT) {
-        val targets = uiState.allDocuments.filter { it.id != uiState.documentId }
-        val mode = if (uiState.activeSelectionType == ReviewSelectionType.COPY) {
-            com.paperflow.app.ui.home.DocumentTransferMode.COPY
-        } else {
-            com.paperflow.app.ui.home.DocumentTransferMode.MOVE
-        }
-        DocumentSelectionDialog(
-            documents = targets,
-            mode = mode,
-            onDismiss = { showTransferDialog = false },
-            onConfirm = { targetId ->
-                viewModel.transferSelectedPages(targetId) {
-                    showTransferDialog = false
-                    if (uiState.pages.isEmpty() && mode == com.paperflow.app.ui.home.DocumentTransferMode.MOVE) {
-                        onBack()
+                    itemsIndexed(uiState.pages, key = { _, p -> p.id }) { index, page ->
+                        val isSelected = uiState.selectedPageIds.contains(page.id)
+                        ReviewPageCard(
+                            page = page,
+                            pageNumber = index + 1,
+                            isSelected = isSelected,
+                            canMoveUp = index > 0,
+                            canMoveDown = index < uiState.pages.size - 1,
+                            onClick = {
+                                if (isSelectionMode) {
+                                    viewModel.toggleSelection(page.id)
+                                } else {
+                                    onEditPage(page.id)
+                                }
+                            },
+                            onDelete = { deleteConfirmPageId = page.id },
+                            onMoveUp = { viewModel.movePage(index, index - 1) },
+                            onMoveDown = { viewModel.movePage(index, index + 1) },
+                            onEdit = { onEditPage(page.id) },
+                            onSign = { onSignPage(page.id) },
+                            onAnnotate = { onAnnotatePage(page.id) }
+                        )
                     }
                 }
             }
-        )
-    }
-}
 
-@OptIn(ExperimentalFoundationApi::class)
+            // Delete Confirmation Dialog
+            if (deleteConfirmPageId != null) {
+                AlertDialog(
+                    onDismissRequest = { deleteConfirmPageId = null },
+                    title = { Text("Delete Page") },
+                    text = { Text("Are you sure you want to delete this page?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            deleteConfirmPageId?.let { viewModel.deletePage(it) }
+                            deleteConfirmPageId = null
+                        }) {
+                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { deleteConfirmPageId = null }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            // Document Selection Dialog for Transfer (Move/Copy)
+            if (showTransferDialog && uiState.activeSelectionType != null && uiState.activeSelectionType != ReviewSelectionType.CONVERT) {
+                val targets = uiState.allDocuments.filter { it.id != uiState.documentId }
+                val mode = if (uiState.activeSelectionType == ReviewSelectionType.COPY) {
+                    com.paperflow.app.ui.home.DocumentTransferMode.COPY
+                } else {
+                    com.paperflow.app.ui.home.DocumentTransferMode.MOVE
+                }
+                DocumentSelectionDialog(
+                    documents = targets,
+                    mode = mode,
+                    onDismiss = { showTransferDialog = false },
+                    onConfirm = { targetId ->
+                        viewModel.transferSelectedPages(targetId) {
+                            showTransferDialog = false
+                            if (uiState.pages.isEmpty() && mode == com.paperflow.app.ui.home.DocumentTransferMode.MOVE) {
+                                onBack()
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
 @Composable
-private fun PageCard(
+fun ReviewPageCard(
     page: com.paperflow.app.data.model.PageEntity,
     pageNumber: Int,
+    isSelected: Boolean,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
-    isSelected: Boolean,
-    isSelectionMode: Boolean,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
-    onDelete: () -> Unit,
-    onEdit: () -> Unit = {},
-    onSign: () -> Unit = {},
-    onAnnotate: () -> Unit = {},
-    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onSign: () -> Unit,
+    onAnnotate: () -> Unit,
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
@@ -350,24 +340,24 @@ private fun PageCard(
         Column {
             Box {
                 val file = remember(page.imagePath) { File(page.imagePath) }
-                var lastMod by remember(page.imagePath) { mutableStateOf(page.createdAt.toString()) }
-                
+                var lastMod by remember(page.imagePath) { mutableStateOf(file.lastModified().toString()) }
+
                 androidx.compose.runtime.LaunchedEffect(page.imagePath) {
                     lastMod = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         file.lastModified().toString()
                     }
                 }
-                
+
                 AsyncImage(
                     model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
                         .data(file)
-                        .memoryCacheKey("${page.imagePath}_$lastMod")
-                        .diskCacheKey("${page.imagePath}_$lastMod")
+                        .memoryCacheKey("${file.absolutePath}_$lastMod")
+                        .diskCacheKey("${file.absolutePath}_$lastMod")
                         .size(coil3.size.Size.ORIGINAL)
                         .precision(coil3.size.Precision.EXACT)
                         .build(),
                     contentDescription = "Page $pageNumber",
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.75f)
