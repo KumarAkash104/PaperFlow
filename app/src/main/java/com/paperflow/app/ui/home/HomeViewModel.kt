@@ -67,6 +67,9 @@ class HomeViewModel(
     private val _selectedDocumentIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedDocumentIds: StateFlow<Set<String>> = _selectedDocumentIds
 
+    private val _isDocSelectionMode = MutableStateFlow(false)
+    val isDocSelectionMode: StateFlow<Boolean> = _isDocSelectionMode
+
     private val _selectedPhotoIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedPhotoIds: StateFlow<Set<String>> = _selectedPhotoIds
 
@@ -147,6 +150,84 @@ class HomeViewModel(
             selected - documentId
         } else {
             selected + documentId
+        }
+    }
+
+    fun startDocSelection(documentId: String) {
+        _isDocSelectionMode.value = true
+        _selectedDocumentIds.value = setOf(documentId)
+    }
+
+    fun cancelDocSelection() {
+        _isDocSelectionMode.value = false
+        _selectedDocumentIds.value = emptySet()
+    }
+
+    fun selectAllDocs(allIds: List<String>) {
+        if (_selectedDocumentIds.value.size == allIds.size) {
+            _selectedDocumentIds.value = emptySet()
+        } else {
+            _selectedDocumentIds.value = allIds.toSet()
+        }
+    }
+
+    fun deleteSelectedDocuments() {
+        val ids = _selectedDocumentIds.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            ids.forEach { repository.deleteDocument(it) }
+            _selectedDocumentIds.value = emptySet()
+            _isDocSelectionMode.value = false
+            _transferMessage.value = "${ids.size} document${if (ids.size == 1) "" else "s"} deleted"
+        }
+    }
+
+    fun mergeSelectedDocuments(context: Context, onMerged: (String) -> Unit) {
+        val ids = _selectedDocumentIds.value.toList()
+        if (ids.size < 2) return
+        viewModelScope.launch {
+            _isTransferring.value = true
+            try {
+                val newDoc = withContext(Dispatchers.IO) {
+                    val targetDoc = repository.createDocument("Merged_${System.currentTimeMillis().toString().takeLast(4)}")
+                    val allPages = mutableListOf<String>()
+                    for (docId in ids) {
+                        val pages = repository.getPagesSync(docId).sortedBy { it.pageIndex }
+                        pages.forEach { p ->
+                            val srcFile = File(p.imagePath)
+                            if (srcFile.exists()) {
+                                val destFile = repository.createScanImageFile(".png")
+                                srcFile.copyTo(destFile, overwrite = true)
+                                repository.addPage(targetDoc.id, destFile.absolutePath, allPages.size)
+                                allPages.add(destFile.absolutePath)
+                            }
+                        }
+                    }
+                    if (allPages.isNotEmpty()) {
+                        val docDir = repository.getDocumentDir(targetDoc.id)
+                        val sourcePdf = File(docDir, "source.pdf")
+                        try {
+                            com.paperflow.app.pdf.PdfExporter.exportToPdf(
+                                context = context.applicationContext,
+                                imagePaths = allPages,
+                                pageSize = com.paperflow.app.pdf.PageSize.A4,
+                                quality = com.paperflow.app.pdf.ExportQuality.HIGH,
+                                outputFile = sourcePdf
+                            )
+                        } catch (_: Exception) {}
+                        repository.updateDocument(targetDoc.copy(thumbnailPath = allPages.first(), pageCount = allPages.size))
+                    }
+                    targetDoc
+                }
+                _selectedDocumentIds.value = emptySet()
+                _isDocSelectionMode.value = false
+                _transferMessage.value = "Documents merged successfully!"
+                onMerged(newDoc.id)
+            } catch (e: Exception) {
+                _transferError.value = e.message ?: "Failed to merge documents"
+            } finally {
+                _isTransferring.value = false
+            }
         }
     }
 

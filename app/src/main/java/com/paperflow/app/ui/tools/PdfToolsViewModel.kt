@@ -67,6 +67,33 @@ class PdfToolsViewModel(
         }
     }
 
+    fun watermarkPdf(uri: Uri, watermarkText: String, opacity: Float = 0.35f) {
+        runTool("Adding watermark...") {
+            val file = copyUriToTemp(uri, "watermark_input.pdf")
+            val output = PdfTools.createToolOutputFile(appContext, "watermarked_${System.currentTimeMillis()}.pdf")
+            PdfTools.watermarkPdf(file, output, watermarkText, opacity)
+            "Watermark added to all pages" to output
+        }
+    }
+
+    fun protectPdf(uri: Uri, password: String) {
+        runTool("Securing PDF with password...") {
+            val file = copyUriToTemp(uri, "protect_input.pdf")
+            val output = PdfTools.createToolOutputFile(appContext, "protected_${System.currentTimeMillis()}.pdf")
+            PdfTools.protectPdf(file, output, password)
+            "PDF encrypted and password protected" to output
+        }
+    }
+
+    fun unlockPdf(uri: Uri, password: String) {
+        runTool("Unlocking PDF...") {
+            val file = copyUriToTemp(uri, "unlock_input.pdf")
+            val output = PdfTools.createToolOutputFile(appContext, "unlocked_${System.currentTimeMillis()}.pdf")
+            PdfTools.unlockPdf(file, output, password)
+            "Password removed from PDF" to output
+        }
+    }
+
     fun extractImages(uri: Uri) {
         viewModelScope.launch {
             _uiState.value = ToolsUiState(isProcessing = true, resultMessage = "Extracting images...")

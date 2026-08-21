@@ -32,6 +32,11 @@ import android.widget.Toast
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.BrandingWatermark
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -86,6 +92,22 @@ fun PdfToolsScreen(
     var compressUri by remember { mutableStateOf<Uri?>(null) }
     var compressQuality by remember { mutableFloatStateOf(60f) }
 
+    // Watermark dialog state
+    var showWatermarkDialog by remember { mutableStateOf(false) }
+    var watermarkUri by remember { mutableStateOf<Uri?>(null) }
+    var watermarkText by remember { mutableStateOf("CONFIDENTIAL") }
+    var watermarkOpacity by remember { mutableFloatStateOf(0.35f) }
+
+    // Protect dialog state
+    var showProtectDialog by remember { mutableStateOf(false) }
+    var protectUri by remember { mutableStateOf<Uri?>(null) }
+    var protectPassword by remember { mutableStateOf("") }
+
+    // Unlock dialog state
+    var showUnlockDialog by remember { mutableStateOf(false) }
+    var unlockUri by remember { mutableStateOf<Uri?>(null) }
+    var unlockPassword by remember { mutableStateOf("") }
+
     androidx.compose.runtime.LaunchedEffect(uiState.importedDocumentId) {
         uiState.importedDocumentId?.let { docId ->
             onImported(docId)
@@ -119,6 +141,51 @@ fun PdfToolsScreen(
         }
     }
 
+    val splitPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.splitPdf(uri)
+        }
+    }
+
+    val extractImagesPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.extractImages(uri)
+        }
+    }
+
+    val watermarkPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            watermarkUri = uri
+            showWatermarkDialog = true
+        }
+    }
+
+    val protectPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            protectUri = uri
+            protectPassword = ""
+            showProtectDialog = true
+        }
+    }
+
+    val unlockPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            unlockUri = uri
+            unlockPassword = ""
+            showUnlockDialog = true
+        }
+    }
+
     val editPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
@@ -135,6 +202,140 @@ fun PdfToolsScreen(
         if (uri != null) {
             viewModel.selectPdfForEditing(uri) { path ->
                 onReadPdf(path)
+            }
+        }
+    }
+
+    // ── Watermark dialog ──
+    if (showWatermarkDialog && watermarkUri != null) {
+        Dialog(onDismissRequest = { showWatermarkDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Watermark PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = watermarkText,
+                        onValueChange = { watermarkText = it },
+                        label = { Text("Watermark Text") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text("Opacity: ${(watermarkOpacity * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+                    Slider(
+                        value = watermarkOpacity,
+                        onValueChange = { watermarkOpacity = it },
+                        valueRange = 0.1f..0.8f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { showWatermarkDialog = false }, modifier = Modifier.weight(1f)) {
+                            Text("Cancel")
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                showWatermarkDialog = false
+                                watermarkUri?.let { viewModel.watermarkPdf(it, watermarkText.ifBlank { "CONFIDENTIAL" }, watermarkOpacity) }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Apply")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Protect PDF dialog ──
+    if (showProtectDialog && protectUri != null) {
+        Dialog(onDismissRequest = { showProtectDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Password Protect PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = protectPassword,
+                        onValueChange = { protectPassword = it },
+                        label = { Text("Password") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { showProtectDialog = false }, modifier = Modifier.weight(1f)) {
+                            Text("Cancel")
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                if (protectPassword.isNotBlank()) {
+                                    showProtectDialog = false
+                                    protectUri?.let { viewModel.protectPdf(it, protectPassword) }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = protectPassword.isNotBlank()
+                        ) {
+                            Text("Protect")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Unlock PDF dialog ──
+    if (showUnlockDialog && unlockUri != null) {
+        Dialog(onDismissRequest = { showUnlockDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Unlock PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = unlockPassword,
+                        onValueChange = { unlockPassword = it },
+                        label = { Text("Current Password") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { showUnlockDialog = false }, modifier = Modifier.weight(1f)) {
+                            Text("Cancel")
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                if (unlockPassword.isNotBlank()) {
+                                    showUnlockDialog = false
+                                    unlockUri?.let { viewModel.unlockPdf(it, unlockPassword) }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = unlockPassword.isNotBlank()
+                        ) {
+                            Text("Unlock")
+                        }
+                    }
+                }
             }
         }
     }
@@ -293,9 +494,44 @@ fun PdfToolsScreen(
                 }
                 item {
                     ToolCard(
+                        icon = Icons.Default.CallSplit,
+                        title = "Split PDF",
+                        onClick = { splitPicker.launch(arrayOf("application/pdf")) },
+                    )
+                }
+                item {
+                    ToolCard(
                         icon = Icons.Default.Compress,
                         title = "Compress",
                         onClick = { compressPicker.launch(arrayOf("application/pdf")) },
+                    )
+                }
+                item {
+                    ToolCard(
+                        icon = Icons.Default.Collections,
+                        title = "PDF to Images",
+                        onClick = { extractImagesPicker.launch(arrayOf("application/pdf")) },
+                    )
+                }
+                item {
+                    ToolCard(
+                        icon = Icons.Default.BrandingWatermark,
+                        title = "Watermark",
+                        onClick = { watermarkPicker.launch(arrayOf("application/pdf")) },
+                    )
+                }
+                item {
+                    ToolCard(
+                        icon = Icons.Default.Lock,
+                        title = "Lock PDF",
+                        onClick = { protectPicker.launch(arrayOf("application/pdf")) },
+                    )
+                }
+                item {
+                    ToolCard(
+                        icon = Icons.Default.LockOpen,
+                        title = "Unlock PDF",
+                        onClick = { unlockPicker.launch(arrayOf("application/pdf")) },
                     )
                 }
                 item {

@@ -56,6 +56,49 @@ class PdfEditorViewModel(
     private val _uiState = MutableStateFlow(PdfEditorUiState())
     val uiState: StateFlow<PdfEditorUiState> = _uiState.asStateFlow()
 
+    private val undoStack = mutableListOf<List<PdfEditOverlay>>()
+    private val redoStack = mutableListOf<List<PdfEditOverlay>>()
+
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
+
+    private fun pushState() {
+        undoStack.add(_uiState.value.overlays.toList())
+        if (undoStack.size > 30) undoStack.removeAt(0)
+        redoStack.clear()
+        _canUndo.value = undoStack.isNotEmpty()
+        _canRedo.value = false
+    }
+
+    fun undo() {
+        if (undoStack.isNotEmpty()) {
+            redoStack.add(_uiState.value.overlays.toList())
+            val prevState = undoStack.removeAt(undoStack.lastIndex)
+            _uiState.value = _uiState.value.copy(
+                overlays = prevState,
+                selectedOverlayId = null
+            )
+            _canUndo.value = undoStack.isNotEmpty()
+            _canRedo.value = redoStack.isNotEmpty()
+        }
+    }
+
+    fun redo() {
+        if (redoStack.isNotEmpty()) {
+            undoStack.add(_uiState.value.overlays.toList())
+            val nextState = redoStack.removeAt(redoStack.lastIndex)
+            _uiState.value = _uiState.value.copy(
+                overlays = nextState,
+                selectedOverlayId = null
+            )
+            _canUndo.value = undoStack.isNotEmpty()
+            _canRedo.value = redoStack.isNotEmpty()
+        }
+    }
+
     private val highResCache = LinkedHashMap<Int, String>(5, 0.75f, true)
     private val thumbCache = ConcurrentHashMap<Int, String>()
     private val pageBlocksCache = ConcurrentHashMap<Int, List<PdfTextBlock>>()
@@ -265,6 +308,7 @@ class PdfEditorViewModel(
             whiteout = true
         )
 
+        pushState()
         _uiState.value = _uiState.value.copy(
             overlays = _uiState.value.overlays + newOverlay,
             selectedOverlayId = newOverlay.id
@@ -286,6 +330,7 @@ class PdfEditorViewModel(
             fontName = "Sans",
             whiteout = false
         )
+        pushState()
         _uiState.value = _uiState.value.copy(
             overlays = _uiState.value.overlays + newOverlay,
             selectedOverlayId = newOverlay.id
@@ -305,6 +350,7 @@ class PdfEditorViewModel(
             whiteout = true,
             color = android.graphics.Color.WHITE
         )
+        pushState()
         _uiState.value = _uiState.value.copy(
             overlays = _uiState.value.overlays + newOverlay,
             selectedOverlayId = newOverlay.id
@@ -324,6 +370,7 @@ class PdfEditorViewModel(
             imagePath = imagePath,
             whiteout = false
         )
+        pushState()
         _uiState.value = _uiState.value.copy(
             overlays = _uiState.value.overlays + newOverlay,
             selectedOverlayId = newOverlay.id
@@ -341,6 +388,7 @@ class PdfEditorViewModel(
 
     fun deleteSelectedOverlay() {
         val selectedId = _uiState.value.selectedOverlayId ?: return
+        pushState()
         _uiState.value = _uiState.value.copy(
             overlays = _uiState.value.overlays.filter { it.id != selectedId },
             selectedOverlayId = null

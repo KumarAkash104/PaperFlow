@@ -66,6 +66,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -791,6 +792,10 @@ fun PdfReaderScreen(
         showUnsavedDialog = true
     }
 
+    // Jump to page dialog state
+    var showJumpToPageDialog by remember { mutableStateOf(false) }
+    var jumpPageInput by remember { mutableStateOf("") }
+
     // Animated brightness overlay
     val brightnessAlpha by animateFloatAsState(
         targetValue = 1f - uiState.brightness,
@@ -1325,11 +1330,23 @@ fun PdfReaderScreen(
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1
                             )
-                            Text(
-                                text = "Page ${uiState.currentPage + 1} of ${uiState.pageCount}",
-                                color = onSurfaceColor.copy(alpha = 0.5f),
-                                fontSize = 11.sp
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable {
+                                        jumpPageInput = (uiState.currentPage + 1).toString()
+                                        showJumpToPageDialog = true
+                                    }
+                                    .padding(vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = "Page ${uiState.currentPage + 1} of ${uiState.pageCount} ▾",
+                                    color = onSurfaceColor.copy(alpha = 0.7f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                         // Save to documents
                         IconButton(
@@ -1435,6 +1452,47 @@ fun PdfReaderScreen(
                     }
             }
         }
+    }
+
+    if (showJumpToPageDialog) {
+        AlertDialog(
+            onDismissRequest = { showJumpToPageDialog = false },
+            title = { Text("Go to Page") },
+            text = {
+                Column {
+                    Text("Enter page number (1 - ${uiState.pageCount}):", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = jumpPageInput,
+                        onValueChange = { jumpPageInput = it.filter { ch -> ch.isDigit() } },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val pageNum = jumpPageInput.toIntOrNull()
+                    if (pageNum != null && pageNum in 1..uiState.pageCount) {
+                        val targetIndex = pageNum - 1
+                        viewModel.setCurrentPage(targetIndex)
+                        scope.launch {
+                            if (uiState.scrollMode == ScrollMode.VERTICAL) {
+                                listState.scrollToItem(targetIndex)
+                            }
+                        }
+                    }
+                    showJumpToPageDialog = false
+                }) {
+                    Text("Go")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showJumpToPageDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showUnsavedDialog) {

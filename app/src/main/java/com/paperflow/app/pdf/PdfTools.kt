@@ -250,6 +250,106 @@ object PdfTools {
         return results
     }
 
+    /**
+     * Add a diagonal text watermark across all pages in a PDF document.
+     */
+    fun watermarkPdf(
+        inputFile: File,
+        outputFile: File,
+        watermarkText: String,
+        opacity: Float = 0.35f,
+        fontSize: Float = 48f
+    ): File {
+        val doc = PDDocument.load(inputFile)
+        try {
+            val font = PDType1Font.HELVETICA_BOLD
+            val safeText = sanitizeWinAnsiText(font, watermarkText)
+
+            for (page in doc.pages) {
+                val mediaBox = page.mediaBox
+                val width = mediaBox.width
+                val height = mediaBox.height
+
+                val contentStream = PDPageContentStream(
+                    doc, page, PDPageContentStream.AppendMode.APPEND, true, true
+                )
+
+                try {
+                    val extGState = com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState().apply {
+                        nonStrokingAlphaConstant = opacity.coerceIn(0.05f, 1.0f)
+                    }
+                    contentStream.setGraphicsStateParameters(extGState)
+
+                    val textWidth = (font.getStringWidth(safeText) / 1000f) * fontSize
+                    val centerX = width / 2f
+                    val centerY = height / 2f
+
+                    contentStream.beginText()
+                    contentStream.setFont(font, fontSize)
+                    contentStream.setNonStrokingColor(180, 180, 180)
+
+                    // Rotate 45 degrees around center
+                    val matrix = com.tom_roush.pdfbox.util.Matrix.getRotateInstance(
+                        Math.toRadians(45.0),
+                        centerX - (textWidth / 2f * 0.707f),
+                        centerY - (textWidth / 2f * 0.707f)
+                    )
+                    contentStream.setTextMatrix(matrix)
+                    contentStream.showText(safeText)
+                    contentStream.endText()
+                } finally {
+                    contentStream.close()
+                }
+            }
+            doc.save(outputFile)
+        } finally {
+            doc.close()
+        }
+        return outputFile
+    }
+
+    /**
+     * Encrypt / Password protect a PDF with a user password.
+     */
+    fun protectPdf(
+        inputFile: File,
+        outputFile: File,
+        userPassword: String,
+        ownerPassword: String = userPassword
+    ): File {
+        val doc = PDDocument.load(inputFile)
+        try {
+            val permissions = com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission()
+            val policy = com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy(
+                ownerPassword, userPassword, permissions
+            )
+            policy.encryptionKeyLength = 128
+            doc.protect(policy)
+            doc.save(outputFile)
+        } finally {
+            doc.close()
+        }
+        return outputFile
+    }
+
+    /**
+     * Unlock / Remove password protection from an encrypted PDF.
+     */
+    fun unlockPdf(
+        inputFile: File,
+        outputFile: File,
+        password: String
+    ): File {
+        val doc = PDDocument.load(inputFile, password)
+        try {
+            doc.isAllSecurityToBeRemoved = true
+            doc.save(outputFile)
+        } finally {
+            doc.close()
+        }
+        return outputFile
+    }
+
     fun createToolOutputFile(context: Context, name: String): File {
         val dir = File(context.cacheDir, "pdf_tools")
         if (!dir.exists()) dir.mkdirs()

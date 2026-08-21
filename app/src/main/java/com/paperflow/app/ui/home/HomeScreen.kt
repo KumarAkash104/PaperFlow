@@ -48,10 +48,15 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.CallMerge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -118,6 +123,7 @@ fun HomeScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isImporting by viewModel.isImporting.collectAsState()
     val selectedDocumentIds by viewModel.selectedDocumentIds.collectAsState()
+    val isDocSelectionMode by viewModel.isDocSelectionMode.collectAsState()
     val isTransferring by viewModel.isTransferring.collectAsState()
     val transferMessage by viewModel.transferMessage.collectAsState()
     val transferError by viewModel.transferError.collectAsState()
@@ -177,6 +183,11 @@ fun HomeScreen(
                             text = "Select to ${activeTransferAction?.label?.lowercase()}",
                             style = MaterialTheme.typography.titleLarge,
                         )
+                    } else if (isDocSelectionMode) {
+                        Text(
+                            text = "${selectedDocumentIds.size} selected",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
                     } else if (isPhotoSelectionMode) {
                         Text(
                             text = "${selectedPhotoIds.size} selected",
@@ -212,10 +223,10 @@ fun HomeScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (activeTab == "Documents") MaterialTheme.colorScheme.primary else Color.Transparent)
-                                    .clickable { viewModel.setActiveTab("Documents") }
-                                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (activeTab == "Documents") MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .clickable { viewModel.setActiveTab("Documents") }
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
                             ) {
                                 Text(
                                     text = "Docs",
@@ -226,10 +237,10 @@ fun HomeScreen(
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (activeTab == "Photos") MaterialTheme.colorScheme.primary else Color.Transparent)
-                                    .clickable { viewModel.setActiveTab("Photos") }
-                                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (activeTab == "Photos") MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .clickable { viewModel.setActiveTab("Photos") }
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
                             ) {
                                 Text(
                                     text = "Photos",
@@ -246,6 +257,10 @@ fun HomeScreen(
                         IconButton(onClick = { viewModel.cancelTransferAction() }) {
                             Icon(Icons.Default.Close, "Cancel")
                         }
+                    } else if (isDocSelectionMode) {
+                        IconButton(onClick = { viewModel.cancelDocSelection() }) {
+                            Icon(Icons.Default.Close, "Cancel")
+                        }
                     } else if (isPhotoSelectionMode) {
                         IconButton(onClick = { viewModel.cancelPhotoSelection() }) {
                             Icon(Icons.Default.Close, "Cancel")
@@ -260,6 +275,18 @@ fun HomeScreen(
                                 Spacer(Modifier.width(4.dp))
                                 Icon(Icons.Default.ArrowForward, contentDescription = "Next")
                             }
+                        }
+                    } else if (isDocSelectionMode) {
+                        IconButton(onClick = { viewModel.selectAllDocs(documents.map { it.id }) }) {
+                            Icon(Icons.Default.DoneAll, "Select All")
+                        }
+                        if (selectedDocumentIds.size >= 2) {
+                            IconButton(onClick = { viewModel.mergeSelectedDocuments(context, onDocumentImported) }) {
+                                Icon(Icons.Default.CallMerge, "Merge to PDF")
+                            }
+                        }
+                        IconButton(onClick = { viewModel.deleteSelectedDocuments() }) {
+                            Icon(Icons.Default.Delete, "Delete selected")
                         }
                     } else if (isPhotoSelectionMode) {
                         IconButton(onClick = { viewModel.selectAllPhotos(photos.map { it.id }) }) {
@@ -318,7 +345,7 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            if (!isSelectionMode && !isPhotoSelectionMode) {
+            if (!isSelectionMode && !isPhotoSelectionMode && !isDocSelectionMode) {
                 NavigationBar {
                     NavigationBarItem(
                         icon = {
@@ -373,39 +400,80 @@ fun HomeScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             if (activeTab == "Documents") {
-                if (documents.isEmpty() && searchQuery.isBlank()) {
-                    // ── Empty state ──
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp),
+                if (documents.isEmpty()) {
+                    if (searchQuery.isNotBlank()) {
+                        // ── Search Empty state ──
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                Icons.Default.DocumentScanner,
-                                contentDescription = null,
-                                modifier = Modifier.size(80.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            )
-                            Spacer(Modifier.height(24.dp))
-                            Text(
-                                "No documents yet",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Tap the scan button to get started",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(32.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.SearchOff,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "No documents found for \"$searchQuery\"",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Try a different search term or clear the filter",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                OutlinedButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                                    Text("Clear Search")
+                                }
+                            }
+                        }
+                    } else {
+                        // ── Empty state ──
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(32.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.DocumentScanner,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(80.dp),
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                )
+                                Spacer(Modifier.height(24.dp))
+                                Text(
+                                    "No documents yet",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Tap the scan button to get started",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 } else {
+                    val activeDocSelection = isSelectionMode || isDocSelectionMode
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(if (isGridView) 2 else 1),
                         modifier = Modifier
@@ -420,10 +488,13 @@ fun HomeScreen(
                                 DocumentCard(
                                     document = doc,
                                     isSelected = doc.id in selectedDocumentIds,
-                                    isSelectionMode = isSelectionMode,
+                                    isSelectionMode = activeDocSelection,
                                     onClick = {
-                                        if (isSelectionMode) viewModel.toggleSelection(doc.id)
+                                        if (activeDocSelection) viewModel.toggleSelection(doc.id)
                                         else onDocumentClick(doc.id)
+                                    },
+                                    onLongClick = {
+                                        if (!activeDocSelection) viewModel.startDocSelection(doc.id)
                                     },
                                     onRename = { renameDialogDoc = doc },
                                     onDelete = { deleteConfirmId = doc.id },
@@ -435,10 +506,13 @@ fun HomeScreen(
                                 DocumentListCard(
                                     document = doc,
                                     isSelected = doc.id in selectedDocumentIds,
-                                    isSelectionMode = isSelectionMode,
+                                    isSelectionMode = activeDocSelection,
                                     onClick = {
-                                        if (isSelectionMode) viewModel.toggleSelection(doc.id)
+                                        if (activeDocSelection) viewModel.toggleSelection(doc.id)
                                         else onDocumentClick(doc.id)
+                                    },
+                                    onLongClick = {
+                                        if (!activeDocSelection) viewModel.startDocSelection(doc.id)
                                     },
                                     onRename = { renameDialogDoc = doc },
                                     onDelete = { deleteConfirmId = doc.id },
@@ -452,35 +526,75 @@ fun HomeScreen(
                 }
             } else {
                 // Photos Tab
-                if (photos.isEmpty() && searchQuery.isBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp),
+                if (photos.isEmpty()) {
+                    if (searchQuery.isNotBlank()) {
+                        // ── Search Empty state ──
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                Icons.Default.Image,
-                                contentDescription = null,
-                                modifier = Modifier.size(80.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            )
-                            Spacer(Modifier.height(24.dp))
-                            Text(
-                                "No photos yet",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Import photos from the 'Import' button to edit",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(32.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.SearchOff,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "No photos found for \"$searchQuery\"",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Try a different search term or clear the filter",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                OutlinedButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                                    Text("Clear Search")
+                                }
+                            }
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(32.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.Image,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(80.dp),
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                )
+                                Spacer(Modifier.height(24.dp))
+                                Text(
+                                    "No photos yet",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Import photos from the 'Import' button to edit",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 } else {
@@ -672,6 +786,7 @@ private fun DocumentListCard(
     isSelected: Boolean,
     isSelectionMode: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onExport: () -> Unit,
@@ -687,7 +802,7 @@ private fun DocumentListCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
@@ -860,6 +975,7 @@ private fun DocumentCard(
     isSelected: Boolean,
     isSelectionMode: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onExport: () -> Unit,
@@ -874,7 +990,7 @@ private fun DocumentCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {

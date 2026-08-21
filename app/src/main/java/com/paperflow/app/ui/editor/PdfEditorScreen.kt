@@ -40,6 +40,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -134,6 +136,9 @@ fun PdfEditorScreen(
         }
     }
 
+    val canUndo by viewModel.canUndo.collectAsState()
+    val canRedo by viewModel.canRedo.collectAsState()
+
     val activeMeta = uiState.pagesMeta.getOrNull(uiState.activePageIndex)
 
     Scaffold(
@@ -161,6 +166,26 @@ fun PdfEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { viewModel.undo() },
+                        enabled = canUndo
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Undo,
+                            "Undo",
+                            tint = if (canUndo) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.redo() },
+                        enabled = canRedo
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Redo,
+                            "Redo",
+                            tint = if (canRedo) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
                     IconButton(
                         onClick = { viewModel.saveEdits() },
                         enabled = !uiState.isSaving && !uiState.isProcessing

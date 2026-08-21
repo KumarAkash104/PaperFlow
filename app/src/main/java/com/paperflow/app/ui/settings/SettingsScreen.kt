@@ -27,6 +27,11 @@ import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.DeleteSweep
+import android.widget.Toast
+import java.io.File
+import java.util.Locale
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,6 +69,14 @@ fun SettingsScreen(
         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
     } catch (_: Exception) { "1.0.0" }
 
+    var cacheSizeBytes by remember {
+        mutableStateOf(getFolderSize(context.cacheDir))
+    }
+
+    val formattedCacheSize = remember(cacheSizeBytes) {
+        formatBytes(cacheSizeBytes)
+    }
+
     // Handle back button press when viewing local sub-screen
     if (activeSubScreen != null) {
         BackHandler {
@@ -93,6 +106,24 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(top = 8.dp),
             ) {
+                // ── Preferences & Storage ──
+                SectionHeader("Preferences & Storage")
+
+                SettingsItem(
+                    icon = Icons.Default.DeleteSweep,
+                    title = "Clear Temporary Cache",
+                    subtitle = "$formattedCacheSize temporary preview & export cache",
+                    onClick = {
+                        val freed = clearDir(context.cacheDir)
+                        cacheSizeBytes = getFolderSize(context.cacheDir)
+                        Toast.makeText(context, "Cache cleared! Freed ${formatBytes(freed)}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(8.dp))
+
                 // ── Rate & Share ──
                 SectionHeader("Support Us")
 
@@ -376,6 +407,36 @@ private fun HelpCard(title: String, description: String) {
                 lineHeight = 20.sp
             )
         }
+    }
+}
+
+private fun getFolderSize(dir: File): Long {
+    var size = 0L
+    dir.listFiles()?.forEach { file ->
+        size += if (file.isDirectory) getFolderSize(file) else file.length()
+    }
+    return size
+}
+
+private fun clearDir(dir: File): Long {
+    var deletedSize = 0L
+    dir.listFiles()?.forEach { file ->
+        deletedSize += if (file.isDirectory) {
+            clearDir(file).also { file.delete() }
+        } else {
+            val len = file.length()
+            file.delete()
+            len
+        }
+    }
+    return deletedSize
+}
+
+private fun formatBytes(bytes: Long): String {
+    return when {
+        bytes >= 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f MB", bytes / (1024f * 1024f))
+        bytes >= 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024f)
+        else -> "$bytes B"
     }
 }
 
