@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.filled.FindInPage
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.GridView
@@ -181,6 +182,19 @@ fun PdfEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            viewModel.forceDetectPageText(uiState.activePageIndex) { count ->
+                                Toast.makeText(context, "Detected $count text blocks on this page", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.FindInPage,
+                            "Detect Words on Page",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     IconButton(
                         onClick = { viewModel.undo() },
                         enabled = canUndo
@@ -575,6 +589,7 @@ fun ActivePageCanvas(
                                             if (current.id == overlay.id) current.copy(text = newText) else current
                                         }
                                     },
+                                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
                                     textStyle = TextStyle(
                                         fontSize = (overlay.fontSize * (containerWidth.value / pageMeta.width)).sp,
                                         fontWeight = if (overlay.isBold) FontWeight.Bold else FontWeight.Normal,
@@ -584,7 +599,7 @@ fun ActivePageCanvas(
                                             "Monospace" -> FontFamily.Monospace
                                             else -> FontFamily.SansSerif
                                         },
-                                        color = Color(overlay.color)
+                                        color = safeTextColor(overlay.color)
                                     ),
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -601,7 +616,7 @@ fun ActivePageCanvas(
                                         "Monospace" -> FontFamily.Monospace
                                         else -> FontFamily.SansSerif
                                     },
-                                    color = Color(overlay.color),
+                                    color = safeTextColor(overlay.color),
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .padding(2.dp)
@@ -997,7 +1012,7 @@ fun SignaturePickerDrawerContent(
                     ) {
                         AsyncImage(
                             model = File(sig.imagePath),
-                            contentDescription = sig.title,
+                            contentDescription = "Signature",
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -1103,5 +1118,14 @@ fun PageGridDrawerContent(
                 }
             }
         }
+    }
+}
+
+private fun safeTextColor(colorInt: Int): Color {
+    val alpha = (colorInt shr 24) and 0xFF
+    return if (alpha == 0) {
+        if (colorInt == 0) Color.Black else Color(colorInt or 0xFF000000.toInt())
+    } else {
+        Color(colorInt)
     }
 }

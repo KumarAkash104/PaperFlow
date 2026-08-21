@@ -44,12 +44,14 @@ class PdfToolsViewModel(
         }
     }
 
-    fun splitPdf(uri: Uri) {
+    fun splitPdf(uri: Uri, rangeStr: String = "") {
         runTool("Splitting PDF...") {
             val file = copyUriToTemp(uri, "split_input.pdf")
+            val totalPages = PdfTools.getPageCount(file)
+            val ranges = PdfTools.parsePageRanges(rangeStr, totalPages)
             val outDir = PdfTools.createToolOutputDir(appContext, "split_${System.currentTimeMillis()}")
-            val results = PdfTools.splitPdf(file, outDir)
-            "Split into ${results.size} files" to results.first()
+            val results = PdfTools.splitPdf(file, outDir, ranges)
+            "Successfully split into ${results.size} PDF file${if (results.size == 1) "" else "s"}" to results.first()
         }
     }
 

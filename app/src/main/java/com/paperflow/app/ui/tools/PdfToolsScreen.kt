@@ -141,11 +141,18 @@ fun PdfToolsScreen(
         }
     }
 
+    // Split dialog state
+    var showSplitDialog by remember { mutableStateOf(false) }
+    var splitUri by remember { mutableStateOf<Uri?>(null) }
+    var splitRangeInput by remember { mutableStateOf("") }
+
     val splitPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) {
-            viewModel.splitPdf(uri)
+            splitUri = uri
+            splitRangeInput = ""
+            showSplitDialog = true
         }
     }
 
@@ -333,6 +340,77 @@ fun PdfToolsScreen(
                             enabled = unlockPassword.isNotBlank()
                         ) {
                             Text("Unlock")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Split PDF dialog ──
+    if (showSplitDialog && splitUri != null) {
+        Dialog(onDismissRequest = { showSplitDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Split PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Enter the page ranges you want to extract, or use presets:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = splitRangeInput,
+                        onValueChange = { splitRangeInput = it },
+                        label = { Text("Page Ranges (e.g. 1-3, 5, 8-10)") },
+                        placeholder = { Text("Leave blank to split all pages") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { splitRangeInput = "all" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("All Pages", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { splitRangeInput = "1-3" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Pages 1-3", fontSize = 11.sp)
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { showSplitDialog = false }, modifier = Modifier.weight(1f)) {
+                            Text("Cancel")
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                showSplitDialog = false
+                                splitUri?.let { viewModel.splitPdf(it, splitRangeInput) }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Split PDF")
                         }
                     }
                 }

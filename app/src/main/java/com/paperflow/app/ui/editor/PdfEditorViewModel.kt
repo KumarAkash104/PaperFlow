@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.paperflow.app.data.local.AppDatabase
 import com.paperflow.app.data.model.SignatureEntity
 import com.paperflow.app.data.repository.DocumentRepository
@@ -173,6 +174,27 @@ class PdfEditorViewModel(
             fd?.close()
         }
         return list
+    }
+
+    fun forceDetectPageText(pageIndex: Int, onResult: ((Int) -> Unit)? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isProcessing = true)
+            val file = File(pdfPath)
+            if (file.exists()) {
+                pageBlocksCache.remove(pageIndex)
+                val blocks = PdfTextExtractor.extractTextFromPage(file, pageIndex)
+                pageBlocksCache[pageIndex] = blocks
+                _uiState.value = _uiState.value.copy(
+                    isProcessing = false,
+                    activePageBlocks = blocks
+                )
+                withContext(Dispatchers.Main) {
+                    onResult?.invoke(blocks.size)
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(isProcessing = false)
+            }
+        }
     }
 
     fun setActivePage(pageIndex: Int) {

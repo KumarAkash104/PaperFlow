@@ -35,6 +35,34 @@ object PdfTools {
         return outputFile
     }
 
+    /** Parse user-entered page ranges like "1-3, 5, 8-10" into 0-indexed IntRanges. */
+    fun parsePageRanges(rangeStr: String, totalPages: Int): List<IntRange> {
+        if (rangeStr.isBlank() || rangeStr.equals("all", ignoreCase = true)) {
+            return (0 until totalPages).map { it..it }
+        }
+        val parts = rangeStr.split(",", ";")
+        val ranges = mutableListOf<IntRange>()
+        for (part in parts) {
+            val trimmed = part.trim()
+            if (trimmed.isEmpty()) continue
+            if (trimmed.contains("-")) {
+                val bounds = trimmed.split("-").mapNotNull { it.trim().toIntOrNull() }
+                if (bounds.size >= 2) {
+                    val start = (bounds[0] - 1).coerceIn(0, totalPages - 1)
+                    val end = (bounds[1] - 1).coerceIn(start, totalPages - 1)
+                    ranges.add(start..end)
+                }
+            } else {
+                val page = trimmed.toIntOrNull()
+                if (page != null && page in 1..totalPages) {
+                    val idx = page - 1
+                    ranges.add(idx..idx)
+                }
+            }
+        }
+        return if (ranges.isEmpty()) (0 until totalPages).map { it..it } else ranges
+    }
+
     /** Split a PDF into individual pages or ranges. */
     fun splitPdf(inputFile: File, outputDir: File, ranges: List<IntRange>? = null): List<File> {
         if (!outputDir.exists()) outputDir.mkdirs()
@@ -42,6 +70,7 @@ object PdfTools {
         val results = mutableListOf<File>()
         try {
             val splitRanges = ranges ?: (0 until doc.numberOfPages).map { it..it }
+            val baseName = inputFile.nameWithoutExtension.removePrefix("split_input")
 
             splitRanges.forEachIndexed { idx, range ->
                 val newDoc = PDDocument()
@@ -51,7 +80,12 @@ object PdfTools {
                             newDoc.addPage(doc.getPage(pageIdx))
                         }
                     }
-                    val outFile = File(outputDir, "split_${idx + 1}.pdf")
+                    val fileName = if (range.first == range.last) {
+                        "Split_page_${range.first + 1}.pdf"
+                    } else {
+                        "Split_pages_${range.first + 1}_to_${range.last + 1}.pdf"
+                    }
+                    val outFile = File(outputDir, fileName)
                     newDoc.save(outFile)
                     results.add(outFile)
                 } finally {
