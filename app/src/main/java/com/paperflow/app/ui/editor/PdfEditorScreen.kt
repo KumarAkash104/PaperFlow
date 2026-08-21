@@ -108,6 +108,19 @@ import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
 
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.FileProvider
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfEditorScreen(
@@ -115,6 +128,7 @@ fun PdfEditorScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val signatures by viewModel.signatures.collectAsState(initial = emptyList())
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -123,16 +137,17 @@ fun PdfEditorScreen(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
-    // Modal page grid drawer
+    // Modal drawers
     var showPageGridDrawer by remember { mutableStateOf(false) }
+    var showSignaturePicker by remember { mutableStateOf(false) }
+    var showSaveSuccessDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sigSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Observe saved state to display confirmation and redirect to Documents screen
+    // Observe saved state to trigger sleek post-save dialog
     LaunchedEffect(uiState.savedFilePath) {
-        uiState.savedFilePath?.let {
-            Toast.makeText(context, "Edited PDF saved to Documents!", Toast.LENGTH_SHORT).show()
-            viewModel.clearSavedState()
-            onBack()
+        if (uiState.savedFilePath != null) {
+            showSaveSuccessDialog = true
         }
     }
 
@@ -307,6 +322,7 @@ fun PdfEditorScreen(
                         SelectedOverlayControlBar(
                             overlay = selected,
                             onUpdate = { updateBlock -> viewModel.updateSelectedOverlay(updateBlock) },
+                            onDuplicate = { viewModel.duplicateOverlay(selected.id) },
                             onDelete = { viewModel.deleteSelectedOverlay() },
                             onDeselect = { viewModel.selectOverlay(null) }
                         )
@@ -324,6 +340,7 @@ fun PdfEditorScreen(
                     EditorBottomActionBar(
                         onOpenPageGrid = { showPageGridDrawer = true },
                         onAddText = { viewModel.addCustomTextOverlay(uiState.activePageIndex) },
+                        onAddSignature = { showSignaturePicker = true },
                         onAddWhiteout = { viewModel.addWhiteoutMaskOverlay(uiState.activePageIndex) },
                         onRotatePage = { viewModel.rotatePage(uiState.activePageIndex) },
                         onDeletePage = { viewModel.deletePage(uiState.activePageIndex) },
@@ -351,6 +368,72 @@ fun PdfEditorScreen(
                         }
                     )
                 }
+            }
+
+            // ── Signature Picker Drawer ──
+            if (showSignaturePicker) {
+                ModalBottomSheet(
+                    onDismissRequest = { showSignaturePicker = false },
+                    sheetState = sigSheetState,
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    SignaturePickerDrawerContent(
+                        signatures = signatures,
+                        onSelectSignature = { sigPath ->
+                            viewModel.addImageOrSignatureOverlay(uiState.activePageIndex, sigPath, isSignature = true)
+                            scope.launch { sigSheetState.hide() }.invokeOnCompletion {
+                                showSignaturePicker = false
+                            }
+                        }
+                    )
+                }
+            }
+
+            // ── Post-Save Success Dialog ──
+            if (showSaveSuccessDialog && uiState.savedFilePath != null) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showSaveSuccessDialog = false
+                        viewModel.clearSavedState()
+                        onBack()
+                    },
+                    title = { Text("PDF Saved Successfully", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Text(
+                            "Your edits have been saved to your library.\nFile: ${File(uiState.savedFilePath!!).name}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val savedFile = File(uiState.savedFilePath!!)
+                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", savedFile)
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    type = "application/pdf"
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
+                            }
+                        ) {
+                            Icon(Icons.Default.Share, "Share", modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Share PDF")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showSaveSuccessDialog = false
+                                viewModel.clearSavedState()
+                                onBack()
+                            }
+                        ) {
+                            Text("Done")
+                        }
+                    }
+                )
             }
         }
     }
@@ -477,7 +560,7 @@ fun ActivePageCanvas(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color(overlay.color))
+                                .background(if (overlay.type == OverlayType.WHITEOUT_MASK) Color(overlay.color) else Color.White)
                         )
                     }
 
@@ -540,8 +623,9 @@ fun ActivePageCanvas(
                         }
                     }
 
-                    // Interactive Corner Resize Drag Handle (When Selected)
+                    // Interactive Corner Resize Drag Handles (When Selected)
                     if (isSelected) {
+                        // Bottom-Right Handle
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
@@ -575,15 +659,28 @@ fun ActivePageCanvas(
 }
 
 /**
- * Floating bar when an overlay is selected to edit text, size, color, or delete.
+ * Floating bar when an overlay is selected to edit text, size, color, duplicate, or delete.
  */
 @Composable
 fun SelectedOverlayControlBar(
     overlay: PdfEditOverlay,
     onUpdate: ((PdfEditOverlay) -> PdfEditOverlay) -> Unit,
+    onDuplicate: () -> Unit,
     onDelete: () -> Unit,
     onDeselect: () -> Unit
 ) {
+    val quickColors = remember {
+        listOf(
+            Color(0xFF000000), // Black
+            Color(0xFF1E88E5), // Blue
+            Color(0xFFE53935), // Red
+            Color(0xFF43A047), // Green
+            Color(0xFF8E24AA), // Purple
+            Color(0xFF757575), // Gray
+            Color(0xFFFFFFFF)  // White
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -605,6 +702,67 @@ fun SelectedOverlayControlBar(
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // Color Swatches & Font Family Row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Color circles
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    quickColors.forEach { c ->
+                        val isSelected = overlay.color == if (c == Color.Black) android.graphics.Color.BLACK else if (c == Color.White) android.graphics.Color.WHITE else android.graphics.Color.rgb((c.red * 255).toInt(), (c.green * 255).toInt(), (c.blue * 255).toInt())
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(c)
+                                .border(
+                                    if (isSelected) 2.5.dp else 1.dp,
+                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.LightGray,
+                                    CircleShape
+                                )
+                                .clickable {
+                                    onUpdate {
+                                        it.copy(
+                                            color = if (c == Color.Black) android.graphics.Color.BLACK
+                                            else if (c == Color.White) android.graphics.Color.WHITE
+                                            else android.graphics.Color.rgb((c.red * 255).toInt(), (c.green * 255).toInt(), (c.blue * 255).toInt())
+                                        )
+                                    }
+                                }
+                        )
+                    }
+                }
+
+                // Font Family Switcher Chip
+                val currentFont = overlay.fontName
+                TextButton(
+                    onClick = {
+                        val next = when (currentFont) {
+                            "Sans" -> "Serif"
+                            "Serif" -> "Monospace"
+                            else -> "Sans"
+                        }
+                        onUpdate { it.copy(fontName = next) }
+                    },
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text(
+                        when (currentFont) {
+                            "Serif" -> "Serif"
+                            "Monospace" -> "Mono"
+                            else -> "Sans"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
 
         Row(
@@ -643,14 +801,14 @@ fun SelectedOverlayControlBar(
                         onClick = { onUpdate { it.copy(fontSize = (it.fontSize - 1f).coerceAtLeast(8f)) } },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Text("-", fontWeight = FontWeight.Bold)
+                        Text("-", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
-                    Text("${overlay.fontSize.roundToInt()}pt", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text("${overlay.fontSize.roundToInt()}pt", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     IconButton(
                         onClick = { onUpdate { it.copy(fontSize = (it.fontSize + 1f).coerceAtMost(48f)) } },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Text("+", fontWeight = FontWeight.Bold)
+                        Text("+", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
@@ -661,7 +819,7 @@ fun SelectedOverlayControlBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("Width:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("W:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     IconButton(
                         onClick = { onUpdate { it.copy(widthFraction = (it.widthFraction - 0.02f).coerceAtLeast(0.02f)) } },
                         modifier = Modifier.size(28.dp)
@@ -673,7 +831,7 @@ fun SelectedOverlayControlBar(
 
                     Spacer(Modifier.width(6.dp))
 
-                    Text("Height:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("H:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     IconButton(
                         onClick = { onUpdate { it.copy(heightFraction = (it.heightFraction - 0.01f).coerceAtLeast(0.01f)) } },
                         modifier = Modifier.size(28.dp)
@@ -686,6 +844,11 @@ fun SelectedOverlayControlBar(
             }
 
             Spacer(Modifier.weight(1f))
+
+            // Duplicate Overlay
+            IconButton(onClick = onDuplicate, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.ContentCopy, "Duplicate", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+            }
 
             // Delete Overlay
             IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
@@ -707,6 +870,7 @@ fun SelectedOverlayControlBar(
 fun EditorBottomActionBar(
     onOpenPageGrid: () -> Unit,
     onAddText: () -> Unit,
+    onAddSignature: () -> Unit,
     onAddWhiteout: () -> Unit,
     onRotatePage: () -> Unit,
     onDeletePage: () -> Unit,
@@ -718,7 +882,7 @@ fun EditorBottomActionBar(
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
             .padding(horizontal = 14.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Page Grid Selector
@@ -730,7 +894,13 @@ fun EditorBottomActionBar(
         // Add Text
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onAddText() }.padding(4.dp)) {
             Icon(Icons.Default.TextFields, "Add Text", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
-            Text("Add Text", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
+            Text("Text", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
+        }
+
+        // Add Signature
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onAddSignature() }.padding(4.dp)) {
+            Icon(Icons.Default.Draw, "Sign", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Text("Sign", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
         }
 
         // Whiteout Mask (Redact Box)
@@ -757,6 +927,83 @@ fun EditorBottomActionBar(
                 modifier = Modifier.size(20.dp)
             )
             Text("Delete", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = if (canDeletePage) Color.Red else Color.Gray)
+        }
+    }
+}
+
+@Composable
+fun SignaturePickerDrawerContent(
+    signatures: List<com.paperflow.app.data.model.SignatureEntity>,
+    onSelectSignature: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Select Signature",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                "${signatures.size} saved",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        if (signatures.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No saved signatures found.\nCreate one in Tools > Signature Pad.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+            ) {
+                items(signatures) { sig ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(90.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .border(1.dp, Color.LightGray.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                            .clickable { onSelectSignature(sig.imagePath) }
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = File(sig.imagePath),
+                            contentDescription = sig.title,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
         }
     }
 }

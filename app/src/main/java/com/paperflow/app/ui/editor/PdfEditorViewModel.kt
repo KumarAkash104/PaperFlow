@@ -5,7 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.paperflow.app.data.local.AppDatabase
+import com.paperflow.app.data.model.SignatureEntity
 import com.paperflow.app.data.repository.DocumentRepository
 import com.paperflow.app.pdf.OverlayType
 import com.paperflow.app.pdf.PdfEditOverlay
@@ -14,6 +15,7 @@ import com.paperflow.app.pdf.PdfTextBlock
 import com.paperflow.app.pdf.PdfTextExtractor
 import com.paperflow.app.pdf.PdfTools
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +54,9 @@ class PdfEditorViewModel(
     private val repository: DocumentRepository? = null,
     private val initialPageIndex: Int = 0
 ) : ViewModel() {
+
+    val signatures: Flow<List<SignatureEntity>> =
+        AppDatabase.getInstance(appContext).signatureDao().getAllSignatures()
 
     private val _uiState = MutableStateFlow(PdfEditorUiState())
     val uiState: StateFlow<PdfEditorUiState> = _uiState.asStateFlow()
@@ -425,6 +430,20 @@ class PdfEditorViewModel(
         }
     }
 
+    fun duplicateOverlay(id: String) {
+        val target = _uiState.value.overlays.find { it.id == id } ?: return
+        val clone = target.copy(
+            id = UUID.randomUUID().toString(),
+            xFraction = (target.xFraction + 0.03f).coerceAtMost(0.85f),
+            yFraction = (target.yFraction + 0.03f).coerceAtMost(0.85f)
+        )
+        pushState()
+        _uiState.value = _uiState.value.copy(
+            overlays = _uiState.value.overlays + clone,
+            selectedOverlayId = clone.id
+        )
+    }
+
     fun saveEdits() {
         viewModelScope.launch {
             val overlays = _uiState.value.overlays
@@ -451,16 +470,39 @@ class PdfEditorViewModel(
                                 for (idx in editedPageIndices) {
                                     val pageEntity = pages.find { it.pageIndex == idx }
                                     if (pageEntity != null) {
-                                        val renderedPath = renderPageBitmap(idx, densityDpi = 350, maxDim = 3200)
+                                        val renderedPath = renderPageBitmap(idx, densityDpi = 300, maxDim = 2400)
                                         if (renderedPath != null) {
                                             File(renderedPath).copyTo(File(pageEntity.imagePath), overwrite = true)
                                         }
                                     }
                                 }
                             } else {
-                                val imported = PdfImporter.importPdfAsDocument(file, repository, "Edited")
-                                if (imported != null) {
-                                    activeDocumentId = imported.id
+                                val baseName = file.nameWithoutExtension.removePrefix("Imported ").removePrefix("Edited ")
+                                val newDoc = repository.createDocument("Edited $baseName")
+                                activeDocumentId = newDoc.id
+                                val docDir = repository.getDocumentDir(newDoc.id)
+                                val docSourcePdf = File(docDir, "source.pdf")
+                                file.copyTo(docSourcePdf, overwrite = true)
+
+                                val pagesToRender = (listOf(0) + editedPageIndices).distinct()
+                                var firstThumbnailPath: String? = null
+
+                                for (idx in 0 until _uiState.value.totalPageCount) {
+                                    val pageImgFile = File(docDir, "page_${idx}.png")
+                                    if (idx in pagesToRender) {
+                                        val renderedPath = renderPageBitmap(idx, densityDpi = 300, maxDim = 2400)
+                                        if (renderedPath != null) {
+                                            File(renderedPath).copyTo(pageImgFile, overwrite = true)
+                                        }
+                                    }
+                                    repository.addPage(newDoc.id, pageImgFile.absolutePath, idx)
+                                    if (idx == 0 && pageImgFile.exists()) {
+                                        firstThumbnailPath = pageImgFile.absolutePath
+                                    }
+                                }
+
+                                if (firstThumbnailPath != null) {
+                                    repository.updateDocument(newDoc.copy(thumbnailPath = firstThumbnailPath, pageCount = _uiState.value.totalPageCount))
                                 }
                             }
                         } catch (e: Exception) {
