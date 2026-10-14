@@ -1,6 +1,40 @@
+# Built application files
+*.apk
+*.aar
+*.aab
+*.ap_
+app/release/
+release/
+
+# Gradle & Build outputs
 .gradle/
-.idea/
 build/
+*/build/
 app/build/
+
+# Local configuration
 local.properties
+
+# Android Studio / IntelliJ IDEA
+.idea/
 *.iml
+.cxx/
+captures/
+
+# Keystores & signing keys
+*.jks
+*.keystore
+
+# Logs & crash dumps
+*.log
+log*.txt
+crash*.txt
+*dump*.txt
+*errors*.txt
+*tail*.txt
+pid*.txt
+fatal*.txt
+
+# OS-generated files
+.DS_Store
+Thumbs.db
